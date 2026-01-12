@@ -1,0 +1,29 @@
+/* 🔒 FULL PAGE LOCK */
+#company-lock {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+}
+
+.company-overlay {
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* 🚫 Disable entire app */
+body.company-locked {
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+/* ✅ Allow dialog interaction only */
+.modal,
+.modal * {
+    pointer-events: auto !important;
+}
+
+.modal {
+    z-index: 9999 !important;
+}

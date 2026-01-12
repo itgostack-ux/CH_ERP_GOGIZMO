@@ -247,3 +247,17 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+before_request = [
+    "ch_erp15.utils.login_guard.enforce_company_selection"
+]
+
+app_include_js = [
+    "/assets/ch_erp15/js/company_selector.js"
+]
+
+app_include_css = [
+    "/assets/ch_erp15/css/company_selector.css"
+]
+permission_query_conditions = {
+    "*": "ch_erp15.permission_query_conditions.get_conditions"
+}
