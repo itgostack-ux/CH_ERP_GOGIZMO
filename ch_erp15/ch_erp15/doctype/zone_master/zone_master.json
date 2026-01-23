@@ -5,7 +5,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "zone_master"
+  "zone_master",
+  "name1"
  ],
  "fields": [
   {
@@ -13,13 +14,18 @@
    "fieldtype": "Link",
    "label": "Zone Master",
    "options": "Zone"
+  },
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-12 09:51:06.944760",
+ "modified": "2026-01-23 12:54:30.021047",
  "modified_by": "Administrator",
  "module": "Ch Erp15",
  "name": "Zone Master",
