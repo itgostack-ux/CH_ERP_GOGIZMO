@@ -1,15 +1,6 @@
 {
- "charts": [
-  {
-   "chart_name": "Sales Order Trends",
-   "label": "Sales Order Trends"
-  },
-  {
-   "chart_name": "Purchase Order Trends",
-   "label": "Purchase Order Trends"
-  }
- ],
- "content": "[{\"id\":\"tQfv4BeMC8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Gogizmo ERP</span>\",\"col\":12}},{\"id\":\"HnGgAMr-L-\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Purchase Order Trends\",\"col\":12}},{\"id\":\"NlQ9XRjrG7\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Sales Order Trends\",\"col\":12}},{\"id\":\"I6JDsik2Bg\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying\",\"col\":4}},{\"id\":\"5Cwxtn0v7n\",\"type\":\"card\",\"data\":{\"card_name\":\"Selling Module\",\"col\":4}},{\"id\":\"s11F_YZrdp\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "charts": [],
+ "content": "[{\"id\":\"tQfv4BeMC8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Gogizmo ERP</span>\",\"col\":12}},{\"id\":\"OCTgD_m2aV\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"rgJ8qYrjx_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Buying Dashboard\",\"col\":3}},{\"id\":\"h5nOrbxhr9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Dashboard\",\"col\":3}},{\"id\":\"V6ze5mF7uZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"I6JDsik2Bg\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying\",\"col\":4}},{\"id\":\"5Cwxtn0v7n\",\"type\":\"card\",\"data\":{\"card_name\":\"Selling Module\",\"col\":4}},{\"id\":\"oFiCoNO6Oj\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock Entry\",\"col\":4}},{\"id\":\"s11F_YZrdp\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2026-01-10 16:36:29.845583",
  "custom_blocks": [],
  "docstatus": 0,
@@ -197,10 +188,29 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Entry",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Entry",
+   "link_count": 0,
+   "link_to": "Stock Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-01-23 10:36:00.287712",
- "modified_by": "manonraj@gostack.in",
+ "modified": "2026-01-23 14:14:05.028766",
+ "modified_by": "Administrator",
  "module": "Ch Erp15",
  "name": "Ch Erp",
  "number_cards": [],
@@ -210,6 +220,21 @@
  "quick_lists": [],
  "roles": [],
  "sequence_id": 10.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Buying Dashboard",
+   "link_to": "Buying",
+   "type": "Dashboard"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Sales Dashboard",
+   "link_to": "Selling",
+   "type": "Dashboard"
+  }
+ ],
  "title": "Ch Erp"
 }
