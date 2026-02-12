@@ -1,16 +1,17 @@
 {
  "charts": [],
- "content": "[{\"id\":\"tQfv4BeMC8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Gogizmo ERP</span>\",\"col\":12}},{\"id\":\"OCTgD_m2aV\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"rgJ8qYrjx_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Buying Dashboard\",\"col\":3}},{\"id\":\"h5nOrbxhr9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Dashboard\",\"col\":3}},{\"id\":\"V6ze5mF7uZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"I6JDsik2Bg\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying\",\"col\":4}},{\"id\":\"5Cwxtn0v7n\",\"type\":\"card\",\"data\":{\"card_name\":\"Selling Module\",\"col\":4}},{\"id\":\"oFiCoNO6Oj\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock Entry\",\"col\":4}},{\"id\":\"s11F_YZrdp\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "content": "[{\"id\":\"tQfv4BeMC8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Gogizmo ERP</span>\",\"col\":12}},{\"id\":\"OCTgD_m2aV\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"rgJ8qYrjx_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Buying Dashboard\",\"col\":3}},{\"id\":\"h5nOrbxhr9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Dashboard\",\"col\":3}},{\"id\":\"V6ze5mF7uZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"I6JDsik2Bg\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying\",\"col\":4}},{\"id\":\"5Cwxtn0v7n\",\"type\":\"card\",\"data\":{\"card_name\":\"Selling Module\",\"col\":4}},{\"id\":\"oFiCoNO6Oj\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock Entry \",\"col\":4}},{\"id\":\"s11F_YZrdp\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2026-01-10 16:36:29.845583",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
+ "icon": "",
  "idx": 0,
- "indicator_color": "green",
+ "indicator_color": "",
  "is_hidden": 0,
- "label": "Ch Erp",
+ "label": "Gogizmo ERP",
  "links": [
   {
    "hidden": 0,
@@ -192,7 +193,7 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Stock Entry",
+   "label": "Stock Entry ",
    "link_count": 1,
    "link_type": "DocType",
    "onboard": 0,
@@ -209,10 +210,10 @@
    "type": "Link"
   }
  ],
- "modified": "2026-01-23 14:14:05.028766",
+ "modified": "2026-02-12 08:57:01.613020",
  "modified_by": "Administrator",
  "module": "Ch Erp15",
- "name": "Ch Erp",
+ "name": "Gogizmo ERP",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
@@ -236,5 +237,5 @@
    "type": "Dashboard"
   }
  ],
- "title": "Ch Erp"
+ "title": "Gogizmo ERP"
 }
