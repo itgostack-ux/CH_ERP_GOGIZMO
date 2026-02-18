@@ -267,26 +267,27 @@ app_license = "mit"
 # doctype_js = {
 #     "Purchase Order": "custom/purchase_order.js"
 # }
-
 override_doctype_class = {
     "Purchase Order": "ch_erp15.ch_erp15.custom.purchase_order.CustomPurchaseOrder",
     "Purchase Receipt": "ch_erp15.ch_erp15.custom.purchase_receipt.CustomPurchaseReceipt",
     "Purchase Invoice": "ch_erp15.ch_erp15.custom.purchase_invoice.CustomPurchaseInvoice",
 }
 
-
 doctype_js = {
-    "Purchase Order": "ch_erp15/ch_erp15/custom/purchase_order.js"
+    "Purchase Order": "public/js/purchase_order.js"
 }
 
-
-
-
-
-
-
-# doc_events = {
-#     "Purchase Order": {
-#         "before_calculate_taxes_and_totals": "tnova_pulse.marginal_tax.apply_marginal_exclusive_tax"
-#     }
-# }
+doc_events = {
+    "Stock Entry": {
+        "validate": "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity"
+    },
+    "Purchase Receipt": {
+        "validate": "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity"
+    },
+    "Purchase Invoice": {
+        "validate": "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity"
+    },
+    "Delivery Note": {
+        "validate": "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity"
+    }
+}
