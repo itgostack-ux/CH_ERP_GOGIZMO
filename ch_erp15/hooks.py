@@ -273,9 +273,14 @@ override_doctype_class = {
     "Purchase Invoice": "ch_erp15.ch_erp15.custom.purchase_invoice.CustomPurchaseInvoice",
 }
 
+
 doctype_js = {
-    "Purchase Order": "public/js/purchase_order.js"
+    "Purchase Order": "ch_erp15/custom/purchase_order.js",
+    "Purchase Receipt": "ch_erp15/custom/purchase_receipt.js",
+    "Purchase Inovice": "ch_erp15/custom/purchase_invoice.js"
+
 }
+
 
 doc_events = {
     "Stock Entry": {
@@ -291,3 +296,5 @@ doc_events = {
         "validate": "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity"
     }
 }
+# app_include_css = "/assets/ch_erp15/css/custom_theme.css"
+# app_include_js = "/assets/ch_erp15/js/custom_theme.js"

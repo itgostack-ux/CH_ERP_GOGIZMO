@@ -37,9 +37,7 @@ class CustomPurchaseInvoice(PurchaseInvoice):
 
             total_margin_taxable += margin_taxable
 
-        # --------------------------------------------
-        # TAX CALCULATION (On Margin Only)
-        # --------------------------------------------
+      
         for tax in self.taxes:
 
             tax.tax_amount = 0
@@ -67,9 +65,7 @@ class CustomPurchaseInvoice(PurchaseInvoice):
 
                 total_gst += tax_amount
 
-        # --------------------------------------------
-        # EXEMPTED VALUE (ITEM WISE SAFE METHOD)
-        # --------------------------------------------
+     
         for item in self.items:
 
             qty = flt(item.qty)
@@ -82,7 +78,6 @@ class CustomPurchaseInvoice(PurchaseInvoice):
             item_amount = rate * qty
             margin_taxable = margin_unit * qty
 
-            # Proportionate GST per item
             item_gst = 0
             if total_margin_taxable > 0:
                 item_gst = (margin_taxable / total_margin_taxable) * total_gst
@@ -97,9 +92,7 @@ class CustomPurchaseInvoice(PurchaseInvoice):
             item.custom_exempted_value = exempted_value
             total_exempted += exempted_value
 
-        # --------------------------------------------
-        # HEADER TOTALS
-        # --------------------------------------------
+   
         self.net_total = total_margin_taxable
         self.base_net_total = total_margin_taxable
 
