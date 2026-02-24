@@ -121,43 +121,48 @@
 frappe.ui.form.on("Purchase Order", {
 
     refresh(frm) {
-        toggle_all_tax_fields(frm);
+        apply_zero_tax(frm);
     },
 
     onload(frm) {
-        toggle_all_tax_fields(frm);
+        apply_zero_tax(frm);
     },
 
     custom_purchase_type(frm) {
-        toggle_all_tax_fields(frm);
+        apply_zero_tax(frm);
     }
 
 });
 
 
-function toggle_all_tax_fields(frm) {
+function apply_zero_tax(frm) {
 
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
 
-    frm.set_df_property("taxes_and_charges", "hidden", is_unregistered);
-    frm.set_df_property("tax_category", "hidden", is_unregistered);
-
-    frm.set_df_property("taxes", "hidden", is_unregistered);
-
-    frm.set_df_property("total_taxes_and_charges", "hidden", is_unregistered);
-    frm.set_df_property("base_total_taxes_and_charges", "hidden", is_unregistered);
-
     if (is_unregistered) {
-        frm.clear_table("taxes");
-        frm.set_value("taxes_and_charges", "");
-        frm.set_value("tax_category", "");
+
+        // Remove tax template
+        // frm.set_value("taxes_and_charges", "");
+
+        // Set tax category blank
+        // frm.set_value("tax_category", "");
+
+        // Set all tax rows to zero
+        (frm.doc.taxes || []).forEach(row => {
+            row.rate = 0;
+            row.tax_amount = 0;
+            row.base_tax_amount = 0;
+            row.total = 0;
+            row.base_total = 0;
+        });
+
+        // Force totals to zero
+        frm.set_value("total_taxes_and_charges", 0);
+        frm.set_value("base_total_taxes_and_charges", 0);
     }
 
-    frm.refresh_fields([
-        "taxes_and_charges",
-        "tax_category",
-        "taxes",
-        "total_taxes_and_charges",
-        "base_total_taxes_and_charges"
-    ]);
+    // Recalculate totals
+    frm.trigger("calculate_taxes_and_totals");
+
+    frm.refresh_fields();
 }
