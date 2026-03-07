@@ -39,14 +39,17 @@
 import frappe
 from frappe.utils import flt, rounded
 from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
-
+from frappe.utils import getdate,nowdate
 
 class CustomPurchaseOrder(PurchaseOrder):
 
     def validate(self):
         super().validate()
 
-        # Apply ONLY for Marginal Purchase
+
+
+
+
         if self.get("custom_purchase_type") != "Marginal":
             return
 
@@ -143,26 +146,15 @@ class CustomPurchaseOrder(PurchaseOrder):
         self.base_total_taxes_and_charges = total_gst
 
         custom_grand_total = (
-            total_exempted
-            + total_gst
-            + total_margin_taxable
+            item,taxable_value
+            + self.taxes_and_charges_added
+            + item.custom_exempted_value
         )
 
         self.grand_total = custom_grand_total
         self.base_grand_total = custom_grand_total
 
         self.rounded_total = rounded(custom_grand_total)
+        self.in_words = frappe.utils.money_in_words(custom_grand_total, self.currency)
 
-        # ------------------------------------------------
-        # 🔒 FINAL VALIDATION (SAVE BLOCKER)
-        # ------------------------------------------------
-        # if flt(self.rounded_total, 2) != flt(self.grand_total, 2):
-        #     frappe.throw(
-        #         f"""
-        #         <b>Validation Error</b><br>
-        #         Total Invoice Amount (INR): <b>{self.rounded_total}</b><br>
-        #         Grand Total (INR): <b>{self.grand_total}</b><br><br>
-        #         These values must be equal for Marginal Purchase Orders.
-        #         """,
-        #         title="Invoice Total Mismatch"
-        #     )
+        
