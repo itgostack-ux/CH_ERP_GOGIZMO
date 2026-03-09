@@ -13,11 +13,11 @@ override_doctype_class = {
     "Purchase Invoice": "ch_erp15.ch_erp15.custom.purchase_invoice.CustomPurchaseInvoice",
 }
 
-    # doctype_js = {
-    #     "Purchase Order": "ch_erp15/custom/purchase_order.js",
-    #     "Purchase Receipt": "ch_erp15/custom/purchase_receipt.js",
-    #     "Purchase Invoice": "ch_erp15/custom/purchase_invoice.js"
-    # }
+doctype_js = {
+    # "Purchase Order": "ch_erp15/custom/purchase_order.js",
+    "Purchase Receipt": "ch_erp15/custom/purchase_receipt.js",
+    # "Purchase Invoice": "ch_erp15/custom/purchase_invoice.js"
+}
 
 
 

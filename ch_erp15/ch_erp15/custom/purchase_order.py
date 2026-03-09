@@ -49,6 +49,7 @@ class CustomPurchaseOrder(PurchaseOrder):
 
 
 
+        print(self.custom_purchase_type,"mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm")
 
         if self.get("custom_purchase_type") != "Marginal":
             return
@@ -146,7 +147,7 @@ class CustomPurchaseOrder(PurchaseOrder):
         self.base_total_taxes_and_charges = total_gst
 
         custom_grand_total = (
-            item,taxable_value
+            item.taxable_value
             + self.taxes_and_charges_added
             + item.custom_exempted_value
         )
