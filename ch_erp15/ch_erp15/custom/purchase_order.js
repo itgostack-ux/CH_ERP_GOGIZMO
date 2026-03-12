@@ -1,123 +1,3 @@
-// // =======================================================
-// // PURCHASE ORDER – MARGINAL LOGIC (ERPNext 15)
-// // CLIENT SIDE (PREVIEW ONLY)
-// // =======================================================
-
-// frappe.ui.form.on("Purchase Order", {
-
-//     refresh(frm) {
-//         console.log("✅ Marginal Purchase JS Loaded");
-//     },
-
-//     supplier(frm) {
-//         if (frm.doc.custom_purchase_type === "Marginal") {
-//             frm.trigger("apply_marginal_tax_logic");
-//         }
-//     },
-
-//     custom_purchase_type(frm) {
-//         if (frm.doc.custom_purchase_type === "Marginal") {
-//             frm.trigger("apply_marginal_tax_logic");
-//         }
-//     },
-
-//     apply_marginal_tax_logic(frm) {
-
-//         if (frm.doc.custom_purchase_type !== "Marginal") return;
-
-//         console.log("🔥 Applying Marginal Tax Logic (JS)");
-
-//         let total_margin_taxable = 0;
-
-//         (frm.doc.items || []).forEach(row => {
-//             total_margin_taxable += flt(row.taxable_value || 0);
-//         });
-
-//         let running_total = total_margin_taxable;
-//         let total_tax = 0;
-
-//         (frm.doc.taxes || []).forEach(tax => {
-
-//             let tax_amount = 0;
-
-//             if (tax.charge_type === "On Net Total") {
-//                 tax_amount = (total_margin_taxable * flt(tax.rate)) / 100;
-//                 running_total += tax_amount;
-//                 total_tax += tax_amount;
-//             }
-
-//             frappe.model.set_value(
-//                 tax.doctype,
-//                 tax.name,
-//                 "tax_amount",
-//                 tax_amount
-//             );
-
-//             frappe.model.set_value(
-//                 tax.doctype,
-//                 tax.name,
-//                 "amount",
-//                 tax_amount
-//             );
-
-//             frappe.model.set_value(
-//                 tax.doctype,
-//                 tax.name,
-//                 "total",
-//                 running_total
-//             );
-//         });
-
-//         let grand_total = total_margin_taxable + total_tax;
-
-//         frm.set_value("net_total", total_margin_taxable);
-//         frm.set_value("grand_total", grand_total);
-//         frm.set_value("rounded_total", Math.round(grand_total));
-//     }
-// });
-
-
-// // =======================================================
-// // ITEM LEVEL EVENTS
-// // =======================================================
-
-// frappe.ui.form.on("Purchase Order Item", {
-
-//     custom_unit_taxable_value(frm, cdt, cdn) {
-//         apply_margin_item_logic(frm, cdt, cdn);
-//     },
-
-//     qty(frm, cdt, cdn) {
-//         apply_margin_item_logic(frm, cdt, cdn);
-//     },
-
-//     rate(frm, cdt, cdn) {
-//         apply_margin_item_logic(frm, cdt, cdn);
-//     }
-// });
-
-
-// // =======================================================
-// // ITEM LEVEL LOGIC
-// // =======================================================
-
-// function apply_margin_item_logic(frm, cdt, cdn) {
-
-//     if (frm.doc.custom_purchase_type !== "Marginal") return;
-
-//     let row = locals[cdt][cdn];
-
-//     if (!row.qty || !row.rate || !row.custom_unit_taxable_value) return;
-
-//     let amount = flt(row.qty) * flt(row.rate);
-//     let taxable_value = flt(row.custom_unit_taxable_value) * flt(row.qty);
-
-//     frappe.model.set_value(cdt, cdn, "amount", amount);
-//     frappe.model.set_value(cdt, cdn, "base_amount", amount);
-//     frappe.model.set_value(cdt, cdn, "taxable_value", taxable_value);
-
-//     frm.trigger("apply_marginal_tax_logic");
-// }
 frappe.ui.form.on("Purchase Order", {
 
     refresh(frm) {
@@ -134,20 +14,11 @@ frappe.ui.form.on("Purchase Order", {
 
 });
 
-
 function apply_zero_tax(frm) {
-
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
 
     if (is_unregistered) {
-
-        // Remove tax template
-        // frm.set_value("taxes_and_charges", "");
-
-        // Set tax category blank
-        // frm.set_value("tax_category", "");
-
-        // Set all tax rows to zero
+        // Update all tax rows
         (frm.doc.taxes || []).forEach(row => {
             row.rate = 0;
             row.tax_amount = 0;
@@ -156,13 +27,173 @@ function apply_zero_tax(frm) {
             row.base_total = 0;
         });
 
-        // Force totals to zero
+        // Refresh the child table to reflect changes
+        frm.refresh_field("taxes");
+
+        // Set total tax fields to 0
         frm.set_value("total_taxes_and_charges", 0);
         frm.set_value("base_total_taxes_and_charges", 0);
+
+        // Recalculate totals
+        frm.trigger("calculate_taxes_and_totals");
+    }
+}
+frappe.ui.form.on("Purchase Order", {
+
+    onload(frm) {
+        apply_marginal_scheme(frm);
+    },
+
+    refresh(frm) {
+        apply_marginal_scheme(frm);
+    },
+
+    validate(frm) {
+        apply_marginal_scheme(frm);
     }
 
-    // Recalculate totals
-    frm.trigger("calculate_taxes_and_totals");
+});
 
-    frm.refresh_fields();
+
+frappe.ui.form.on("Purchase Order Item", {
+
+    qty(frm) {
+        apply_marginal_scheme(frm);
+    },
+
+    rate(frm) {
+        apply_marginal_scheme(frm);
+    },
+
+    custom_unit_taxable_value(frm) {
+        apply_marginal_scheme(frm);
+    }
+
+});
+
+
+frappe.ui.form.on("Purchase Taxes and Charges", {
+
+    rate(frm) {
+        apply_marginal_scheme(frm);
+    }
+
+});
+
+
+function apply_marginal_scheme(frm) {
+
+    if (frm.doc.custom_purchase_type !== "Marginal") {
+        return;
+    }
+
+    let total_margin_taxable = 0;
+    let total_gst = 0;
+    let total_exempted = 0;
+
+    //--------------------------------------------------
+    // ITEM LEVEL
+    //--------------------------------------------------
+
+    (frm.doc.items || []).forEach(item => {
+
+        let qty = flt(item.qty);
+        let rate = flt(item.rate);
+        let margin_unit = flt(item.custom_unit_taxable_value);
+
+        if (qty <= 0 || rate <= 0 || margin_unit <= 0) return;
+
+        let item_amount = qty * rate;
+        let margin_taxable = qty * margin_unit;
+
+        item.amount = item_amount;
+        item.base_amount = item_amount;
+        item.taxable_value = margin_taxable;
+
+        total_margin_taxable += margin_taxable;
+
+    });
+
+    frm.refresh_field("items");
+
+    //--------------------------------------------------
+    // TAX
+    //--------------------------------------------------
+
+    (frm.doc.taxes || []).forEach(tax => {
+
+        tax.tax_amount = 0;
+        tax.amount = 0;
+        tax.total = 0;
+
+        if (tax.charge_type === "On Net Total") {
+
+            let tax_amount = (total_margin_taxable * flt(tax.rate)) / 100;
+
+            tax.tax_amount = tax_amount;
+            tax.amount = tax_amount;
+            tax.total = tax_amount;
+
+            tax.base_tax_amount = tax_amount;
+            tax.base_amount = tax_amount;
+
+            total_gst += tax_amount;
+        }
+
+    });
+
+    frm.refresh_field("taxes");
+
+    //--------------------------------------------------
+    // EXEMPTED
+    //--------------------------------------------------
+
+    (frm.doc.items || []).forEach(item => {
+
+        let qty = flt(item.qty);
+        let margin_unit = flt(item.custom_unit_taxable_value);
+
+        if (qty <= 0 || flt(item.amount) <= 0) return;
+
+        let margin_taxable = qty * margin_unit;
+
+        let exempted_value = flt(item.amount) - margin_taxable - total_gst;
+
+        if (exempted_value < 0) {
+            exempted_value = 0;
+        }
+
+        item.custom_exempted_value = exempted_value;
+
+        total_exempted += exempted_value;
+
+    });
+
+    frm.refresh_field("items");
+
+    //--------------------------------------------------
+    // TOTALS
+    //--------------------------------------------------
+
+    frm.doc.net_total = total_margin_taxable;
+    frm.doc.base_net_total = total_margin_taxable;
+
+    frm.doc.taxes_and_charges_added = total_gst;
+    frm.doc.base_taxes_and_charges_added = total_gst;
+
+    frm.doc.total_taxes_and_charges = total_gst;
+    frm.doc.base_total_taxes_and_charges = total_gst;
+
+    let custom_grand_total = total_margin_taxable + total_gst + total_exempted;
+
+    frm.doc.grand_total = custom_grand_total;
+    frm.doc.base_grand_total = custom_grand_total;
+    frm.doc.rounded_total = Math.round(custom_grand_total);
+
+    frm.refresh_fields([
+        "net_total",
+        "taxes_and_charges_added",
+        "grand_total",
+        "rounded_total"
+    ]);
 }

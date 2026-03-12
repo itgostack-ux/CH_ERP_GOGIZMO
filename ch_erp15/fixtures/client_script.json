@@ -1,0 +1,167 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Order",
+  "enabled": 1,
+  "modified": "2026-03-07 15:05:36.156466",
+  "module": "Ch Erp15",
+  "name": "Auto update supplier for purchase order",
+  "script": "frappe.ui.form.on(\"Purchase Order\", {\n\n    supplier: function(frm) {\n \n        if (!frm.doc.supplier) return;\n \n        frappe.db.get_value(\n\n            \"Supplier\",\n\n            frm.doc.supplier,\n\n            [\"tax_category\"]\n\n        ).then(r => {\n \n            if (!r.message) return;\n \n            // Set Tax Category\n\n            if (r.message.tax_category) {\n\n                frm.set_value(\"tax_category\", r.message.tax_category);\n\n            }\n \n            // Fetch Taxes Template based on Tax Category\n\n            frappe.db.get_value(\n\n                \"Purchase Taxes and Charges Template\",\n\n                {\n\n                    tax_category: r.message.tax_category,\n\n                    company: frm.doc.company\n\n                },\n\n                \"name\"\n\n            ).then(t => {\n \n                if (t.message) {\n\n                    frm.set_value(\"taxes_and_charges\", t.message.name);\n\n                }\n \n            });\n \n        });\n \n    }\n\n});\n ",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Receipt",
+  "enabled": 0,
+  "modified": "2026-03-09 16:27:51.722115",
+  "module": "Ch Erp15",
+  "name": "Purchase Receipt",
+  "script": "frappe.ui.form.on(\"Purchase Receipt Item\", {\n\n    imei_track: function(frm, cdt, cdn) {\n\n        let row = locals[cdt][cdn];\n\n        if (!row.imei_track) return;\n\n        if (!row.qty || row.qty <= 0) {\n            frappe.msgprint(\"Enter Qty first\");\n            frappe.model.set_value(cdt, cdn, \"imei_track\", 0);\n            return;\n        }\n\n        open_imei_dialog(frm, row);\n\n    }\n\n});\n\n\nfunction open_imei_dialog(frm, item_row) {\n\n    let data = [];\n\n    for (let i = 0; i < item_row.qty; i++) {\n        data.push({\n            item_code: item_row.item_code,\n            imei_number: \"\"\n        });\n    }\n\n    let d = new frappe.ui.Dialog({\n\n        title: \"IMEI Entry\",\n\n        fields: [\n            {\n                fieldname: \"imei_table\",\n                fieldtype: \"Table\",\n                label: \"IMEI List\",\n                in_place_edit: true,\n                data: data,\n\n                fields: [\n                    {\n                        fieldtype: \"Data\",\n                        fieldname: \"item_code\",\n                        label: \"Item Code\",\n                        read_only: 1,\n                        in_list_view: 1\n                    },\n                    {\n                        fieldtype: \"Data\",\n                        fieldname: \"imei_number\",\n                        label: \"IMEI Number\",\n                        reqd: 1,\n                        in_list_view: 1\n                    }\n                ]\n            }\n        ],\n\n        primary_action_label: \"Save\",\n\n        primary_action(values) {\n\n            if (!values.imei_table) return;\n\n            // clear existing rows\n            frm.clear_table(\"custom_imei_track\");\n\n            values.imei_table.forEach(function(d){\n\n                let child = frm.add_child(\"custom_imei_track\");\n\n                child.item_code = d.item_code;\n                child.imei_number = d.imei_number;\n\n            });\n\n            frm.refresh_field(\"custom_imei_track\");\n\n            frappe.msgprint(\"IMEI numbers added\");\n\n            d.hide();\n\n        }\n\n    });\n\n    d.show();\n\n}",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Price Master",
+  "enabled": 1,
+  "modified": "2026-02-16 10:36:30.265090",
+  "module": "BuyBack",
+  "name": "Buyback Price Master Download Upload Button UI",
+  "script": "frappe.listview_settings['Buyback Price Master'] = {\n    onload(listview) {\n\n        if (listview.buttons_added) return;\n        listview.buttons_added = true;\n\n        // Download button\n        listview.page.add_inner_button('Buyback Price Import', () => {\n            window.open('/api/method/buyback.api.download_buyback_template');\n        });\n\n        // Upload button\n        listview.page.add_inner_button('Upload Price', () => {\n\n            new frappe.ui.FileUploader({\n                allow_multiple: false,\n                on_success(file) {\n\n                    frappe.call({\n                        method: \"buyback.api.upload_buyback_csv\",\n                        args: { file_url: file.file_url },\n                        callback: () => {\n                            frappe.msgprint(\"Upload complete\");\n                            listview.refresh();\n                        }\n                    });\n\n                }\n            });\n\n        });\n\n    }\n};\n",
+  "view": "List"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Request",
+  "enabled": 1,
+  "modified": "2026-02-10 15:35:45.490273",
+  "module": "BuyBack",
+  "name": "Buyback Request Type",
+  "script": "frappe.ui.form.on('Buyback Request', {\n    refresh(frm) {\n        apply_mode(frm);\n    },\n    mode(frm) {\n        apply_mode(frm);\n    }\n});\n\nfunction apply_mode(frm) {\n\n    let is_buyback = frm.doc.mode === \"BuyBack\";\n\n    frm.toggle_display(\"buyback_section\", is_buyback);\n    frm.toggle_display(\"diagnosis_section\", !is_buyback);\n\n    frm.dashboard.clear_headline();\n    frm.dashboard.set_headline(\n        is_buyback ? \"BuyBack Mode Active\" : \"Diagnosis Mode Active\"\n    );\n}\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Request",
+  "enabled": 1,
+  "modified": "2026-02-26 11:18:49.061222",
+  "module": "BuyBack",
+  "name": "Dynamic Script in Buyback Price",
+  "script": "frappe.ui.form.on('Buyback Request', {\n    refresh(frm) {\n        if (frm.is_new()) calc_price(frm);\n    },\n\n    item_id: calc_price,\n    usage_key: calc_price,\n    grade: calc_price\n});\n\nfunction calc_price(frm) {\n\n    // stop if fields missing\n    if (!frm.doc.item_id || !frm.doc.usage_key || !frm.doc.grade) {\n        frm.set_value('buyback_price', 0);\n        frm.set_value('final_buyback_amount', 0);\n        frm.set_value('cash_notes', 0);\n        return;\n    }\n\n    // build dynamic field name\n    let key = `${frm.doc.grade}_grade_${frm.doc.usage_key}`;\n    console.log(\"PRICE KEY →\", key);\n\n\n    frappe.db.get_doc('Buyback Price Master', frm.doc.item_id)\n        .then(doc => {\n\n            let price = doc[key] || 0;\n            console.log(\"FETCHED PRICE →\", price);\n\n            frm.set_value('buyback_price', price);\n            frm.set_value('final_buyback_amount', price);\n            frm.set_value('cash_notes', price);\n\n        })\n        .catch(err => {\n            console.error(\"Price fetch error:\", err);\n            frm.set_value('buyback_price', 0);\n            frm.set_value('final_buyback_amount', 0);\n            frm.set_value('cash_notes', 0);\n        });\n}",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Price Master",
+  "enabled": 1,
+  "modified": "2026-02-11 14:46:55.710475",
+  "module": "BuyBack",
+  "name": "Buyback Request Staff",
+  "script": "frappe.ui.form.on('Buyback Request', {\n    refresh: function(frm) {\n\n        if (frm.is_new()) {\n            frm.set_value('buyback_request_staff', frappe.session.user);\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Request",
+  "enabled": 1,
+  "modified": "2026-02-11 15:58:33.247795",
+  "module": "BuyBack",
+  "name": "Buyback Request Customer Image Preview",
+  "script": "frappe.ui.form.on('Buyback Request', {\n\n    refresh(frm) {\n        show_preview(frm);\n    },\n\n    customer_image(frm) {\n        show_preview(frm);\n    }\n});\n\nfunction show_preview(frm) {\n\n    if (!frm.doc.customer_image) {\n        frm.set_value('customer_image_preview', '');\n        return;\n    }\n\n    let url = window.location.origin + frm.doc.customer_image;\n\n    frm.set_value('customer_image_preview', url);\n}\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Request",
+  "enabled": 1,
+  "modified": "2026-02-26 11:22:03.986775",
+  "module": "BuyBack",
+  "name": "Buyback Request Payment method Fields",
+  "script": "frappe.ui.form.on('Buyback Request', {\n    payment_mode: function(frm) {\n        payment_ui(frm);\n    },\n    refresh: function(frm) {\n        payment_ui(frm);\n    }\n});\n\nfunction payment_ui(frm) {\n\n    // hide everything first\n    frm.toggle_display([\n        'cash_notes',\n        'account_holder_name',\n        'branch',\n        'bank_name',\n        'ifsc_code',\n        'upi_id',\n         'account_no',\n        'transaction_proof'\n    ], false);\n\n    // always show amount\n    frm.toggle_display('final_buyback_amount', true);\n\n    if (!frm.doc.payment_mode) return;\n\n    frappe.db.get_doc('Payment Method Master', frm.doc.payment_mode)\n        .then(doc => {\n\n            frm.set_value('payment_mode_name', doc.payment_method);\n\n            // CASH\n            if (doc.payment_method === \"cash\") {\n                frm.toggle_display('cash_notes', true);\n            }\n\n            // BANK\n            else if (doc.payment_method === \"bank transfer\") {\n                frm.toggle_display([\n                    'account_holder_name',\n                    'branch',\n                    'bank_name',\n                    'ifsc_code',\n                     'account_no',\n                     'transaction_proof'\n                ], true);\n            }\n\n            // UPI\n            else if (doc.payment_method === \"upi\") {\n                frm.toggle_display([\n                    'upi_id',\n                    'transaction_proof'\n                ], true);\n            }\n\n        });\n}",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Request",
+  "enabled": 1,
+  "modified": "2026-02-13 14:22:56.278723",
+  "module": "BuyBack",
+  "name": "Buyback Request  Nodeal related Fields Show Hide",
+  "script": "frappe.ui.form.on('Buyback Request', {\n    refresh: function(frm) {\n        toggle_no_deal(frm);\n    },\n\n    deal_status: function(frm) {\n        toggle_no_deal(frm);\n    }\n});\n\nfunction toggle_no_deal(frm) {\n    if (frm.doc.deal_status === \"No Deal\") {\n        frm.set_df_property('no_deal_reason', 'hidden', 0);\n        frm.set_df_property('no_deal_reason', 'reqd', 1);\n    } else {\n        frm.set_df_property('no_deal_reason', 'hidden', 1);\n        frm.set_df_property('no_deal_reason', 'reqd', 0);\n        frm.set_value('no_deal_reason', '');\n    }\n}\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Request",
+  "enabled": 1,
+  "modified": "2026-02-26 11:41:08.388548",
+  "module": "BuyBack",
+  "name": "Buyback Request Numeric Field Reference",
+  "script": "frappe.ui.form.on('Buyback Request', {\n    refresh(frm) {\n        bind_integer_fields(frm);\n    }\n});\n\nfunction bind_integer_fields(frm) {\n\n   \n    const integer_fields = ['mobile_no', 'pincode', 'imei'];\n\n    integer_fields.forEach(fieldname => {\n\n        const field = frm.fields_dict[fieldname];\n        if (!field || !field.$input) return;\n\n        const input = field.$input;\n\n        // remove previous bindings\n        input.off('.numeric');\n\n    \n        input.on('keypress.numeric', function (e) {\n\n            const allowedKeys = [\n                \"Backspace\", \"Delete\", \"Tab\",\n                \"ArrowLeft\", \"ArrowRight\",\n                \"Home\", \"End\"\n            ];\n\n            if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) {\n                return;\n            }\n\n            if (!/^[0-9]$/.test(e.key)) {\n                e.preventDefault();\n            }\n        });\n\n            input.on('paste.numeric', function (e) {\n            const pasted = (e.originalEvent || e).clipboardData.getData('text');\n            if (!/^\\d+$/.test(pasted)) {\n                e.preventDefault();\n            }\n        });\n\n        \n        input.on('input.numeric', function () {\n            this.value = this.value.replace(/\\D/g, '');\n        });\n    });\n}",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Buyback Price Master",
+  "enabled": 1,
+  "modified": "2026-02-26 11:36:51.856802",
+  "module": "BuyBack",
+  "name": "Buyback Price Master Numeric Columns",
+  "script": "frappe.ui.form.on('Buyback Price Master', {\n    refresh(frm) {\n        bind_integer_only(frm);\n    }\n});\n\nfunction bind_integer_only(frm) {\n\n    \n    const integer_fields = [\"buyback_price_id\"];\n\n    integer_fields.forEach(fieldname => {\n\n        let field = frm.fields_dict[fieldname];\n        if (!field || !field.$input) return;\n\n        let input = field.$input;\n\n        // remove previous binding\n        input.off('keypress.numeric');\n\n        input.on('keypress.numeric', function (e) {\n\n            const allowedKeys = [\n                \"Backspace\", \"Delete\", \"Tab\",\n                \"ArrowLeft\", \"ArrowRight\",\n                \"Home\", \"End\"\n            ];\n\n            // allow navigation + shortcuts\n            if (e.ctrlKey || e.metaKey || allowedKeys.includes(e.key)) {\n                return;\n            }\n\n            // allow digits only\n            if (!/^[0-9]$/.test(e.key)) {\n                e.preventDefault();\n            }\n        });\n    });\n}",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Order",
+  "enabled": 1,
+  "modified": "2026-03-10 13:32:22.227180",
+  "module": "Ch Erp15",
+  "name": "Sales Order Type Custom",
+  "script": "frappe.ui.form.on(\"Sales Order\", {\n\n    refresh: function(frm) {\n\n        // Add new options to Order Type dropdown\n        frm.set_df_property(\"order_type\", \"options\", [\n            \"Sales\",\n            \"Maintenance\",\n            \"Shopping Cart\",\n            \"Direct Sales\",\n            \"Credit Sales\",\n            \"Finance Sales\",\n            \"Online Sales\",\n            \"Supplier Sales\",\n            \"Free Sales\"\n        ].join(\"\\n\"));\n\n    },\n\n    order_type: function(frm) {\n\n        let sales_type = frm.doc.order_type;\n\n        // Reset required fields\n        frm.set_df_property(\"payment_terms_template\", \"reqd\", 0);\n\n        if (!sales_type) return;\n\n        if (sales_type === \"Direct Sales\") {\n\n            frm.set_df_property(\"payment_terms_template\", \"reqd\", 1);\n\n            frappe.show_alert({\n                message: \"Direct Sales - Immediate payment required\",\n                indicator: \"green\"\n            });\n\n        }\n\n        else if (sales_type === \"Credit Sales\") {\n\n            frappe.show_alert({\n                message: \"Credit Sales - Payment will be collected later\",\n                indicator: \"orange\"\n            });\n\n        }\n\n        else if (sales_type === \"Finance Sales\") {\n\n            frm.set_df_property(\"payment_terms_template\", \"reqd\", 1);\n\n            frappe.show_alert({\n                message: \"Finance Sales - Payment handled by finance provider\",\n                indicator: \"blue\"\n            });\n\n        }\n\n        else if (sales_type === \"Online Sales\") {\n\n            frappe.show_alert({\n                message: \"Online Sales - Payment via online gateway\",\n                indicator: \"green\"\n            });\n\n        }\n\n        else if (sales_type === \"Supplier Sales\") {\n\n            frappe.show_alert({\n                message: \"Supplier Sales transaction\",\n                indicator: \"purple\"\n            });\n\n        }\n\n        else if (sales_type === \"Free Sales\") {\n\n            frm.set_value(\"payment_terms_template\", \"\");\n\n            frappe.msgprint(\"Free Sales - No payment required.\");\n\n        }\n\n    }\n\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Order",
+  "enabled": 0,
+  "modified": "2026-03-11 16:10:45.024815",
+  "module": "Ch Erp15",
+  "name": "Imie update",
+  "script": "frappe.ui.form.on(\"Sales Order Item\", {\n    custom_imei_no: function(frm, cdt, cdn) {\n\n        let row = locals[cdt][cdn];\n\n        if (!row.custom_imei_no) {\n            return;\n        }\n\n        frappe.call({\n            method: \"ch_erp15.api.get_item_from_purchase_order_imei\",\n            args: {\n                imei: row.custom_imei_no\n            },\n            callback: function(r) {\n\n                if (r.message) {\n\n                    frappe.model.set_value(\n                        cdt,\n                        cdn,\n                        \"item_code\",\n                        r.message.item_code\n                    );\n\n                    frappe.model.set_value(\n                        cdt,\n                        cdn,\n                        \"qty\",\n                        1\n                    );\n\n                    frm.refresh_field(\"items\");\n\n                } else {\n\n                    frappe.msgprint(\"IMEI not found in Purchase Order\");\n\n                    frappe.model.set_value(\n                        cdt,\n                        cdn,\n                        \"custom_imei_no\",\n                        \"\"\n                    );\n                }\n\n            }\n        });\n\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Receipt",
+  "enabled": 1,
+  "modified": "2026-03-12 16:06:39.746271",
+  "module": "Ch Erp15",
+  "name": "Auto Update for Purchase Receipt",
+  "script": "function set_supplier_tax_details(frm) {\n\n    if (!frm.doc.supplier) return;\n\n    frappe.db.get_value(\n        \"Supplier\",\n        frm.doc.supplier,\n        [\"tax_category\"]\n    ).then(r => {\n\n        if (!r.message) return;\n\n        // Set Tax Category\n        if (r.message.tax_category) {\n            frm.set_value(\"tax_category\", r.message.tax_category);\n        }\n\n        // Fetch Taxes Template based on Tax Category\n        frappe.db.get_value(\n            \"Purchase Taxes and Charges Template\",\n            {\n                tax_category: r.message.tax_category,\n                company: frm.doc.company\n            },\n            \"name\"\n        ).then(t => {\n\n            if (t.message) {\n                frm.set_value(\"taxes_and_charges\", t.message.name);\n            }\n\n        });\n\n    });\n}\n\n// Purchase Order\nfrappe.ui.form.on(\"Purchase Order\", {\n    supplier: function(frm) {\n        set_supplier_tax_details(frm);\n    }\n});\n\n// Purchase Receipt\nfrappe.ui.form.on(\"Purchase Receipt\", {\n    supplier: function(frm) {\n        set_supplier_tax_details(frm);\n    }\n});\n\n// Purchase Invoice\nfrappe.ui.form.on(\"Purchase Invoice\", {\n    supplier: function(frm) {\n        set_supplier_tax_details(frm);\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Invoice",
+  "enabled": 1,
+  "modified": "2026-03-12 16:07:10.824387",
+  "module": "Ch Erp15",
+  "name": "Auto Update for tax purchase invoice",
+  "script": "function set_supplier_tax_details(frm) {\n\n    if (!frm.doc.supplier) return;\n\n    frappe.db.get_value(\n        \"Supplier\",\n        frm.doc.supplier,\n        [\"tax_category\"]\n    ).then(r => {\n\n        if (!r.message) return;\n\n        // Set Tax Category\n        if (r.message.tax_category) {\n            frm.set_value(\"tax_category\", r.message.tax_category);\n        }\n\n        // Fetch Taxes Template based on Tax Category\n        frappe.db.get_value(\n            \"Purchase Taxes and Charges Template\",\n            {\n                tax_category: r.message.tax_category,\n                company: frm.doc.company\n            },\n            \"name\"\n        ).then(t => {\n\n            if (t.message) {\n                frm.set_value(\"taxes_and_charges\", t.message.name);\n            }\n\n        });\n\n    });\n}\n\n// Purchase Order\nfrappe.ui.form.on(\"Purchase Order\", {\n    supplier: function(frm) {\n        set_supplier_tax_details(frm);\n    }\n});\n\n// Purchase Receipt\nfrappe.ui.form.on(\"Purchase Receipt\", {\n    supplier: function(frm) {\n        set_supplier_tax_details(frm);\n    }\n});\n\n// Purchase Invoice\nfrappe.ui.form.on(\"Purchase Invoice\", {\n    supplier: function(frm) {\n        set_supplier_tax_details(frm);\n    }\n});",
+  "view": "Form"
+ }
+]

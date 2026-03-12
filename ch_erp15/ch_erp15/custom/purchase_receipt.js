@@ -1,178 +1,187 @@
-// frappe.ui.form.on("Purchase Receipt", {
+frappe.ui.form.on("Purchase Receipt", {
 
-//     onload_post_render(frm) {
-//         zero_tax_if_unregistered(frm);
-//     },
+    refresh(frm) {
+        apply_zero_tax(frm);
+    },
 
-//     refresh(frm) {
-//         zero_tax_if_unregistered(frm);
-//     },
+    onload(frm) {
+        apply_zero_tax(frm);
+    },
 
-//     custom_purchase_type(frm) {
-//         zero_tax_if_unregistered(frm);
-//     },
-
-//     supplier(frm) {
-//         zero_tax_if_unregistered(frm);
-//     },
-
-//     items_add(frm) {
-//         zero_tax_if_unregistered(frm);
-//     },
-
-//     validate(frm) {
-//         zero_tax_if_unregistered(frm);
-//     }
-
-// });
-
-
-// function zero_tax_if_unregistered(frm) {
-
-//     if (frm.doc.custom_purchase_type !== "Unregistered") return;
-
-//     // ⭐ Keep fetched rows — only neutralize them
-
-//     (frm.doc.taxes || []).forEach(row => {
-
-//         frappe.model.set_value(row.doctype, row.name, "rate", 0);
-
-//         // Reset calculated values
-//         frappe.model.set_value(row.doctype, row.name, "tax_amount", 0);
-//         frappe.model.set_value(row.doctype, row.name, "base_tax_amount", 0);
-
-//     });
-
-//     // ⭐ Force totals to zero (without breaking links)
-//     frm.set_value("total_taxes_and_charges", 0);
-//     frm.set_value("base_total_taxes_and_charges", 0);
-
-//     // ⭐ Recalculate document totals
-//     frm.trigger("calculate_taxes_and_totals");
-
-//     frm.refresh_field("taxes");
-// }
-frappe.ui.form.on("Purchase Receipt Item", {
-    custom_imei_track: function(frm, cdt, cdn) {
-
-        let row = locals[cdt][cdn];
-
-        if (!row.custom_imei_track) {
-            return;
-        }
-
-        if (!row.qty || row.qty <= 0) {
-            frappe.msgprint("Please enter Qty first");
-            frappe.model.set_value(cdt, cdn, "custom_imei_track", 0);
-            return;
-        }
-
-        open_imei_dialog(frm, row);
+    custom_purchase_type(frm) {
+        apply_zero_tax(frm);
     }
+
+});
+
+function apply_zero_tax(frm) {
+    const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
+
+    if (is_unregistered) {
+        // Update all tax rows
+        (frm.doc.taxes || []).forEach(row => {
+            row.rate = 0;
+            row.tax_amount = 0;
+            row.base_tax_amount = 0;
+            row.total = 0;
+            row.base_total = 0;
+        });
+
+        frm.refresh_field("taxes");
+
+        frm.set_value("total_taxes_and_charges", 0);
+        frm.set_value("base_total_taxes_and_charges", 0);
+
+        frm.trigger("calculate_taxes_and_totals");
+    }
+}
+frappe.ui.form.on("Purchase Receipt", {
+
+    onload(frm) {
+        apply_marginal_scheme(frm);
+    },
+
+    refresh(frm) {
+        apply_marginal_scheme(frm);
+    },
+
+    validate(frm) {
+        apply_marginal_scheme(frm);
+    }
+
 });
 
 
-function open_imei_dialog(frm, row) {
+frappe.ui.form.on("Purchase Receipt Item", {
 
-    let table_data = [];
-    let qty = parseInt(row.qty);
+    qty(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
+    },
 
-    for (let i = 0; i < qty; i++) {
-        table_data.push({
-            item_code: row.item_code,
-            imei_no: ""
-        });
+    rate(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
+    },
+
+    custom_unit_taxable_value(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
     }
 
-    let dialog = new frappe.ui.Dialog({
-        title: "IMEI Entry",
-        size: "large",
+});
 
-        fields: [
-            {
-                fieldname: "imei_table",
-                fieldtype: "Table",
-                label: "IMEI Numbers",
-                in_place_edit: true,
-                reqd: 1,
-                data: table_data,
 
-                fields: [
-                    {
-                        fieldtype: "Data",
-                        fieldname: "item_code",
-                        label: "Item Code",
-                        read_only: 1,
-                        in_list_view: 1
-                    },
-                    {
-                        fieldtype: "Data",
-                        fieldname: "imei_no",
-                        label: "IMEI Number",
-                        in_list_view: 1,
-                        reqd: 1
-                    }
-                ]
-            }
-        ],
+frappe.ui.form.on("Purchase Taxes and Charges", {
 
-        primary_action_label: "Save",
+    rate(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
+    }
 
-        primary_action() {
+});
 
-            let imeis = dialog.fields_dict.imei_table.grid.get_data();
 
-            if (!imeis || imeis.length === 0) {
-                frappe.msgprint("Please enter IMEI numbers");
-                return;
-            }
+function apply_marginal_scheme(frm) {
 
-            // Empty validation
-            let empty = imeis.some(d => !d.imei_no);
-            if (empty) {
-                frappe.msgprint("All IMEI numbers are required");
-                return;
-            }
+    if (frm.doc.custom_purchase_type !== "Marginal") return;
 
-            // Duplicate validation
-            let imei_list = imeis.map(d => d.imei_no);
-            let unique = new Set(imei_list);
+    let total_margin_taxable = 0.0;
+    let total_gst = 0.0;
+    let total_exempted = 0.0;
 
-            if (unique.size !== imei_list.length) {
-                frappe.msgprint("Duplicate IMEI numbers found");
-                return;
-            }
+    //--------------------------------------------------
+    // ITEM LEVEL CALCULATION
+    //--------------------------------------------------
+    (frm.doc.items || []).forEach(item => {
+        let qty = flt(item.qty);
+        let rate = flt(item.rate);
+        let margin_unit = flt(item.custom_unit_taxable_value);
 
-            // Remove existing IMEI rows for same item
-            frm.doc.custom_track = (frm.doc.custom_track || []).filter(
-                d => d.item_code !== row.item_code
-            );
+        if (qty <= 0 || rate <= 0 || margin_unit < 0) return;
 
-            // Add new rows
-            imeis.forEach(function(d) {
+        let item_amount = qty * rate;
+        let margin_taxable = qty * margin_unit;
 
-                let child = frm.add_child("custom_track");
+        item.amount = item_amount;
+        item.base_amount = item_amount;
+        item.taxable_value = margin_taxable;
 
-                child.item_code = d.item_code;
-                child.imei_number = d.imei_no;
+        total_margin_taxable += margin_taxable;
+    });
 
-            });
+    frm.refresh_field("items");
 
-            frm.refresh_field("custom_track");
+    //--------------------------------------------------
+    // TAX CALCULATION
+    //--------------------------------------------------
+    (frm.doc.taxes || []).forEach(tax => {
+        tax.tax_amount = 0;
+        tax.amount = 0;
+        tax.total = 0;
 
-            frappe.msgprint("IMEI Data Saved Successfully");
+        if (tax.charge_type === "On Net Total") {
+            let tax_amount = (total_margin_taxable * flt(tax.rate)) / 100;
 
-            dialog.hide();
+            tax.tax_amount = tax_amount;
+            tax.amount = tax_amount;
+            tax.total = tax_amount;
+
+            tax.base_tax_amount = tax_amount;
+            tax.base_amount = tax_amount;
+
+            total_gst += tax_amount;
         }
     });
 
-    dialog.show();
-    dialog.fields_dict.imei_table.grid.refresh();
+    frm.refresh_field("taxes");
+
+    //--------------------------------------------------
+    // EXEMPTED VALUE CALCULATION
+    //--------------------------------------------------
+    (frm.doc.items || []).forEach(item => {
+        let qty = flt(item.qty);
+        let rate = flt(item.rate);
+        let margin_unit = flt(item.custom_unit_taxable_value);
+
+        if (qty <= 0 || flt(item.amount) <= 0) return;
+
+        let margin_taxable = qty * margin_unit;
+        let gst_share = total_margin_taxable ? (margin_taxable / total_margin_taxable) * total_gst : 0;
+
+        let exempted_value = flt(item.amount) - margin_taxable - gst_share;
+
+        if (exempted_value < 0) exempted_value = 0;
+
+        item.custom_exempted_value = exempted_value;
+        total_exempted += exempted_value;
+    });
+
+    frm.refresh_field("items");
+
+  
+    let grand_total = total_margin_taxable + total_gst + total_exempted;
+
+    frm.set_value("net_total", total_margin_taxable);
+    frm.set_value("base_net_total", total_margin_taxable);
+
+    frm.set_value("total_taxes_and_charges", total_gst);
+    frm.set_value("base_total_taxes_and_charges", total_gst);
+
+    frm.set_value("taxes_and_charges_added", total_gst);
+    frm.set_value("base_taxes_and_charges_added", total_gst);
+
+    frm.set_value("grand_total", grand_total);
+    frm.set_value("base_grand_total", grand_total);
+    frm.set_value("rounded_total", Math.round(grand_total));
+
+    frm.set_value("custom_margin_taxable", total_margin_taxable);
+    frm.set_value("custom_margin_gst", total_gst);
+    frm.set_value("custom_exempted_value", total_exempted);
+
+    frm.refresh_fields([
+        "net_total",
+        "taxes_and_charges_added",
+        "grand_total",
+        "rounded_total",
+        "custom_margin_taxable",
+        "custom_margin_gst",
+        "custom_exempted_value"
+    ]);
 }
-
-
-
-
-
-
-

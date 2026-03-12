@@ -4,6 +4,7 @@ from erpnext.stock.doctype.purchase_receipt.purchase_receipt import PurchaseRece
 
 
 class CustomPurchaseReceipt(PurchaseReceipt):
+    pass
 
     def validate(self):
         super().validate()
