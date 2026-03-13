@@ -1,6 +1,6 @@
 import frappe
 
-REQUIRED = ["company", "city", "zone"]
+REQUIRED = ["company", "territory"]
 
 def enforce_company_selection():
     if frappe.session.user == "Guest":

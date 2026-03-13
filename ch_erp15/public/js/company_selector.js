@@ -16,7 +16,7 @@ function show_company_dialog() {
     $("body").addClass("company-locked");
 
     const dialog = new frappe.ui.Dialog({
-        title: "Select Company, City and Zone",
+        title: "Select Company and Territory",
         static: true,
         animate: false,
         fields: [
@@ -26,47 +26,19 @@ function show_company_dialog() {
                 fieldtype: "Link",
                 options: "Company",
                 reqd: 1,
-                change() {
-                    // Reset dependent fields
-                    dialog.set_value("city", "");
-                    dialog.set_value("zone", "");
-
-                    // Company → City filter
-                    dialog.set_df_property("city", "get_query", () => ({
-                        query: "ch_erp15.api.get_company_cities",
-                        filters: {
-                            company_name: dialog.get_value("company")
-                        }
-                    }));
-
-                    // Company → Zone filter
-                    dialog.set_df_property("zone", "get_query", () => ({
-                        query: "ch_erp15.api.get_company_zones",
-                        filters: {
-                            company_name: dialog.get_value("company")
-                        }
-                    }));
-                }
             },
             {
-                fieldname: "city",
-                label: "City",
+                fieldname: "territory",
+                label: "Territory",
                 fieldtype: "Link",
-                options: "City",
-                reqd: 1
+                options: "Territory",
+                reqd: 1,
             },
-            {
-                fieldname: "zone",
-                label: "Zone",
-                fieldtype: "Link",
-                options: "Zone",
-                reqd: 1
-            }
         ],
         primary_action_label: "Enter Application",
         primary_action(values) {
-            if (!values.company || !values.city || !values.zone) {
-                frappe.msgprint("Please select Company, City and Zone");
+            if (!values.company || !values.territory) {
+                frappe.msgprint("Please select Company and Territory");
                 return;
             }
 

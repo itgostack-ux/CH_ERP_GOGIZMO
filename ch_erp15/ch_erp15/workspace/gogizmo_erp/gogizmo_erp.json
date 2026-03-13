@@ -227,9 +227,29 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "City",
+   "link_count": 0,
+   "link_to": "City",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Zone",
+   "link_count": 0,
+   "link_to": "Zone",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-02-18 10:34:34.373311",
+ "modified": "2026-03-13 00:11:11.373708",
  "modified_by": "Administrator",
  "module": "Ch Erp15",
  "name": "Gogizmo ERP",
