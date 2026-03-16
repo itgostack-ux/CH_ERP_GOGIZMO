@@ -154,8 +154,46 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Stock Entry ",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Entry",
+   "link_count": 0,
+   "link_to": "Stock Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Warehouse Capacity",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Warehouse Capacity",
+   "link_count": 0,
+   "link_to": "Warehouse Capacity",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Reports",
-   "link_count": 3,
+   "link_count": 5,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -192,44 +230,26 @@
   },
   {
    "hidden": 0,
-   "is_query_report": 0,
-   "label": "Stock Entry ",
-   "link_count": 1,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Stock Entry",
+   "is_query_report": 1,
+   "label": "Stock Ledger",
    "link_count": 0,
-   "link_to": "Stock Entry",
-   "link_type": "DocType",
+   "link_to": "Stock Ledger",
+   "link_type": "Report",
    "onboard": 0,
    "type": "Link"
   },
   {
    "hidden": 0,
-   "is_query_report": 0,
-   "label": "Warehouse Capacity",
-   "link_count": 1,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Warehouse Capacity",
+   "is_query_report": 1,
+   "label": "Stock Analytics",
    "link_count": 0,
-   "link_to": "Warehouse Capacity",
-   "link_type": "DocType",
+   "link_to": "Stock Analytics",
+   "link_type": "Report",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-03-13 00:11:11.373708",
+ "modified": "2026-03-16 12:18:59.456690",
  "modified_by": "Administrator",
  "module": "Ch Erp15",
  "name": "Gogizmo ERP",
@@ -253,6 +273,12 @@
    "doc_view": "List",
    "label": "Sales Dashboard",
    "link_to": "Selling",
+   "type": "Dashboard"
+  },
+  {
+   "doc_view": "",
+   "label": "Stock Dashboard",
+   "link_to": "Stock",
    "type": "Dashboard"
   }
  ],
