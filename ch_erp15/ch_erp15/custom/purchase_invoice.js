@@ -154,7 +154,8 @@ function apply_marginal_scheme(frm) {
     frm.doc.total_taxes_and_charges = total_gst;
     frm.doc.base_total_taxes_and_charges = total_gst;
 
-    let custom_grand_total = frm.doc.net_total +  total_exempted;
+    let custom_grand_total = frm.doc.net_total +  total_exempted + total_gst;
+    console.log(custom_grand_total,"custom_grand_total");
 
     frm.doc.grand_total = custom_grand_total;
     frm.doc.base_grand_total = custom_grand_total;

@@ -1,15 +1,82 @@
 frappe.ui.form.on("Purchase Receipt", {
 
-    refresh(frm) {
-        apply_zero_tax(frm);
+    // onload(frm) {
+    //     apply_zero_tax(frm);
+    //     apply_marginal_scheme(frm);
+    // },
+
+    // refresh(frm) {
+    //     apply_zero_tax(frm);
+    //     apply_marginal_scheme(frm);
+    // },
+
+    // custom_purchase_type(frm) {
+    //     apply_zero_tax(frm);
+    //     apply_marginal_scheme(frm);
+    // },
+
+    validate(frm) {
+        apply_marginal_scheme(frm);
+
+        // Ensure IMEI child table has valid data
+        if (frm.doc.custom_track && frm.doc.custom_track.length > 0) {
+            let duplicate_check = {};
+            for (let d of frm.doc.custom_track) {
+                if (!d.imei_number) {
+                    frappe.throw("All IMEI numbers are required.");
+                }
+                if (duplicate_check[d.imei_number]) {
+                    frappe.throw(`Duplicate IMEI number found: ${d.imei_number}`);
+                }
+                duplicate_check[d.imei_number] = true;
+            }
+        }
     },
 
-    onload(frm) {
+    before_save(frm) {
         apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
     },
 
-    custom_purchase_type(frm) {
+    before_submit(frm) {
         apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
+    }
+});
+
+frappe.ui.form.on("Purchase Receipt Item", {
+
+    qty(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
+    },
+
+    rate(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
+    },
+
+    custom_unit_taxable_value(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
+    },
+
+    custom_imei_track(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (!row.custom_imei_track) return;
+
+        if (!row.qty || row.qty <= 0) {
+            frappe.msgprint("Please enter Qty first");
+            frappe.model.set_value(cdt, cdn, "custom_imei_track", 0);
+            return;
+        }
+
+        open_imei_dialog(frm, row);
+    }
+
+});
+
+frappe.ui.form.on("Purchase Taxes and Charges", {
+
+    rate(frm, cdt, cdn) {
+        apply_marginal_scheme(frm);
     }
 
 });
@@ -18,7 +85,6 @@ function apply_zero_tax(frm) {
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
 
     if (is_unregistered) {
-        // Update all tax rows
         (frm.doc.taxes || []).forEach(row => {
             row.rate = 0;
             row.tax_amount = 0;
@@ -35,48 +101,6 @@ function apply_zero_tax(frm) {
         frm.trigger("calculate_taxes_and_totals");
     }
 }
-frappe.ui.form.on("Purchase Receipt", {
-
-    onload(frm) {
-        apply_marginal_scheme(frm);
-    },
-
-    refresh(frm) {
-        apply_marginal_scheme(frm);
-    },
-
-    validate(frm) {
-        apply_marginal_scheme(frm);
-    }
-
-});
-
-
-frappe.ui.form.on("Purchase Receipt Item", {
-
-    qty(frm, cdt, cdn) {
-        apply_marginal_scheme(frm);
-    },
-
-    rate(frm, cdt, cdn) {
-        apply_marginal_scheme(frm);
-    },
-
-    custom_unit_taxable_value(frm, cdt, cdn) {
-        apply_marginal_scheme(frm);
-    }
-
-});
-
-
-frappe.ui.form.on("Purchase Taxes and Charges", {
-
-    rate(frm, cdt, cdn) {
-        apply_marginal_scheme(frm);
-    }
-
-});
-
 
 function apply_marginal_scheme(frm) {
 
@@ -86,9 +110,6 @@ function apply_marginal_scheme(frm) {
     let total_gst = 0.0;
     let total_exempted = 0.0;
 
-    //--------------------------------------------------
-    // ITEM LEVEL CALCULATION
-    //--------------------------------------------------
     (frm.doc.items || []).forEach(item => {
         let qty = flt(item.qty);
         let rate = flt(item.rate);
@@ -108,9 +129,6 @@ function apply_marginal_scheme(frm) {
 
     frm.refresh_field("items");
 
-    //--------------------------------------------------
-    // TAX CALCULATION
-    //--------------------------------------------------
     (frm.doc.taxes || []).forEach(tax => {
         tax.tax_amount = 0;
         tax.amount = 0;
@@ -132,9 +150,6 @@ function apply_marginal_scheme(frm) {
 
     frm.refresh_field("taxes");
 
-    //--------------------------------------------------
-    // EXEMPTED VALUE CALCULATION
-    //--------------------------------------------------
     (frm.doc.items || []).forEach(item => {
         let qty = flt(item.qty);
         let rate = flt(item.rate);
@@ -146,7 +161,6 @@ function apply_marginal_scheme(frm) {
         let gst_share = total_margin_taxable ? (margin_taxable / total_margin_taxable) * total_gst : 0;
 
         let exempted_value = flt(item.amount) - margin_taxable - gst_share;
-
         if (exempted_value < 0) exempted_value = 0;
 
         item.custom_exempted_value = exempted_value;
@@ -155,7 +169,6 @@ function apply_marginal_scheme(frm) {
 
     frm.refresh_field("items");
 
-  
     let grand_total = total_margin_taxable + total_gst + total_exempted;
 
     frm.set_value("net_total", total_margin_taxable);
@@ -184,4 +197,66 @@ function apply_marginal_scheme(frm) {
         "custom_margin_gst",
         "custom_exempted_value"
     ]);
+}
+
+function open_imei_dialog(frm, row) {
+
+    let table_data = [];
+    for (let i = 0; i < row.qty; i++) {
+        table_data.push({ item_code: row.item_code, imei_no: "" });
+    }
+
+    let dialog = new frappe.ui.Dialog({
+        title: "IMEI Entry",
+        size: "large",
+        fields: [
+            {
+                fieldname: "imei_table",
+                fieldtype: "Table",
+                label: "IMEI Numbers",
+                reqd: 1,
+                in_place_edit: true,
+                data: table_data,
+                fields: [
+                    { fieldtype: "Data", fieldname: "item_code", label: "Item Code", read_only: 1, in_list_view: 1 },
+                    { fieldtype: "Data", fieldname: "imei_no", label: "IMEI Number", reqd: 1, in_list_view: 1 }
+                ]
+            }
+        ],
+
+        primary_action_label: "Save",
+        primary_action() {
+            let imeis = dialog.fields_dict.imei_table.grid.get_data();
+
+            if (!imeis.length || imeis.some(d => !d.imei_no)) {
+                frappe.msgprint("All IMEI numbers are required");
+                return;
+            }
+
+            let list = imeis.map(d => d.imei_no);
+            if (new Set(list).size !== list.length) {
+                frappe.msgprint("Duplicate IMEI numbers found");
+                return;
+            }
+
+            frm.doc.custom_track = (frm.doc.custom_track || []).filter(
+                d => d.purchase_receipt_item !== row.name
+            );
+
+            imeis.forEach(d => {
+                let child = frm.add_child("custom_track");
+                child.item_code = row.item_code;
+                child.imei_number = d.imei_no;
+                child.purchase_receipt_item = row.name;
+            });
+
+            frm.refresh_field("custom_track");
+            frm.dirty();
+
+            frappe.show_alert({ message: "IMEI saved successfully", indicator: "green" });
+            dialog.hide();
+        }
+    });
+
+    dialog.show();
 }
