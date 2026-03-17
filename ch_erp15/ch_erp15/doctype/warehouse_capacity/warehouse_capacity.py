@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
@@ -90,29 +91,22 @@ def validate_warehouse_capacity(doc, method=None):
         # Quantity Check
         if max_qty and final_qty > max_qty:
             frappe.throw(
-                f"""Quantity capacity exceeded
-
-Warehouse : {warehouse}
-Item      : {item_code}
-
-Max Qty   : {max_qty}
-Current   : {current_qty}
-Incoming  : {incoming_qty}
-After     : {final_qty}
-"""
+                _("Quantity capacity exceeded for {0} in {1}. "
+                  "Max: {2}, Current: {3}, Incoming: {4}, After: {5}").format(
+                    item_code, warehouse, max_qty, current_qty,
+                    incoming_qty, final_qty
+                ),
+                title=_("Capacity Exceeded"),
             )
 
         # Amount Check
         if max_amount and final_value > max_amount:
             frappe.throw(
-                f"""Amount capacity exceeded
-
-Warehouse : {warehouse}
-Item      : {item_code}
-
-Max Value : ₹{max_amount:,.2f}
-Current   : ₹{current_value:,.2f}
-Incoming  : ₹{incoming_value:,.2f}
-After     : ₹{final_value:,.2f}
-"""
+                _("Amount capacity exceeded for {0} in {1}. "
+                  "Max: \u20b9{2:,.2f}, Current: \u20b9{3:,.2f}, "
+                  "Incoming: \u20b9{4:,.2f}, After: \u20b9{5:,.2f}").format(
+                    item_code, warehouse, max_amount, current_value,
+                    incoming_value, final_value
+                ),
+                title=_("Capacity Exceeded"),
             )

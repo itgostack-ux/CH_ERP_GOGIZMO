@@ -1,19 +1,18 @@
 frappe.ui.form.on("Purchase Receipt", {
 
-    // onload(frm) {
-    //     apply_zero_tax(frm);
-    //     apply_marginal_scheme(frm);
-    // },
+    refresh(frm) {
+        apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
+    },
 
-    // refresh(frm) {
-    //     apply_zero_tax(frm);
-    //     apply_marginal_scheme(frm);
-    // },
+    before_save(frm) {
+        apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
+    },
 
-    // custom_purchase_type(frm) {
-    //     apply_zero_tax(frm);
-    //     apply_marginal_scheme(frm);
-    // },
+    before_submit(frm) {
+        apply_zero_tax(frm);
+    },
 
     validate(frm) {
         apply_marginal_scheme(frm);
@@ -31,18 +30,10 @@ frappe.ui.form.on("Purchase Receipt", {
                 duplicate_check[d.imei_number] = true;
             }
         }
-    },
-
-    before_save(frm) {
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
-    },
-
-    before_submit(frm) {
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
     }
+
 });
+
 
 frappe.ui.form.on("Purchase Receipt Item", {
 
@@ -73,6 +64,7 @@ frappe.ui.form.on("Purchase Receipt Item", {
 
 });
 
+
 frappe.ui.form.on("Purchase Taxes and Charges", {
 
     rate(frm, cdt, cdn) {
@@ -80,6 +72,7 @@ frappe.ui.form.on("Purchase Taxes and Charges", {
     }
 
 });
+
 
 function apply_zero_tax(frm) {
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
@@ -101,6 +94,7 @@ function apply_zero_tax(frm) {
         frm.trigger("calculate_taxes_and_totals");
     }
 }
+
 
 function apply_marginal_scheme(frm) {
 

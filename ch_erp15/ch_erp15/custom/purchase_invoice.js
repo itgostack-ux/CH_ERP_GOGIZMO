@@ -2,14 +2,17 @@ frappe.ui.form.on("Purchase Invoice", {
 
     refresh(frm) {
         apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
     },
 
     onload(frm) {
         apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
     },
 
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
     }
 
 });
@@ -35,17 +38,7 @@ function apply_zero_tax(frm) {
         frm.trigger("calculate_taxes_and_totals");
     }
 }
-frappe.ui.form.on("Purchase Invoice", {
-    onload(frm) {
-        apply_marginal_scheme(frm);
-    },
-    refresh(frm) {
-        apply_marginal_scheme(frm);
-    },
-    custom_purchase_type(frm) {
-        apply_marginal_scheme(frm);
-    }
-});
+
 
 frappe.ui.form.on("Purchase Invoice Item", {
     qty(frm) {

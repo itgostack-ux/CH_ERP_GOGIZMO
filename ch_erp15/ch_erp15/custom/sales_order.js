@@ -1,4 +1,4 @@
-frappe.ui.form.on('Sales Invoice', {
+frappe.ui.form.on('Sales Order', {
     refresh(frm) {
 
         frm.add_custom_button("Open Scanner", function () {
