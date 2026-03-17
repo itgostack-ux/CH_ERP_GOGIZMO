@@ -10,6 +10,7 @@ override_doctype_class = {
     # "Purchase Order": "ch_erp15.ch_erp15.custom.purchase_order.CustomPurchaseOrder",
     "Purchase Receipt": "ch_erp15.ch_erp15.custom.purchase_receipt.CustomPurchaseReceipt",
     # "Purchase Invoice": "ch_erp15.ch_erp15.custom.purchase_invoice.CustomPurchaseInvoice",
+    "Stock Entry": "ch_erp15.ch_erp15.custom.stock_entry.CustomStockEntry",
 }
 
 doctype_js = {
@@ -17,6 +18,7 @@ doctype_js = {
     "Purchase Receipt": "ch_erp15/custom/purchase_receipt.js",
     "Purchase Invoice": "ch_erp15/custom/purchase_invoice.js",
     "Sales Order": "ch_erp15/custom/sales_order.js",
+    "Stock Entry": "ch_erp15/custom/stock_entry.js",
 }
 
 doc_events = {
