@@ -6,7 +6,10 @@ from frappe.utils import get_datetime
 class CustomStockEntry(StockEntry):
 
     def update_stock_ledger(self):
-        return
+        # Transit workflow entries handle SLEs manually via move_stock
+        if self.custom_status:
+            return
+        super().update_stock_ledger()
 
     def validate(self):
         super().validate()
@@ -41,7 +44,7 @@ class CustomStockEntry(StockEntry):
     def calculate_totals(self):
         total = 0
         for item in self.items:
-            qty = item.custom_final_received_qty 
+            qty = item.custom_final_received_qty or item.qty
             rate = item.basic_rate 
             total += qty * rate
         self.total_incoming_value = total

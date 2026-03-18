@@ -8,28 +8,27 @@ frappe.ui.form.on("Purchase Receipt", {
         apply_marginal_scheme(frm);
     },
 
-<<<<<<< HEAD
-    before_save(frm) {
-=======
     onload(frm) {
->>>>>>> 17f192e (modified for purchase order)
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
     },
 
-<<<<<<< HEAD
+    before_save(frm) {
+        apply_zero_tax(frm);
+        apply_marginal_scheme(frm);
+    },
+
     before_submit(frm) {
         apply_zero_tax(frm);
-=======
+    },
+
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
->>>>>>> 17f192e (modified for purchase order)
     },
 
     validate(frm) {
         apply_marginal_scheme(frm);
-<<<<<<< HEAD
 
         // Ensure IMEI child table has valid data
         if (frm.doc.custom_track && frm.doc.custom_track.length > 0) {
@@ -44,14 +43,14 @@ frappe.ui.form.on("Purchase Receipt", {
                 duplicate_check[d.imei_number] = true;
             }
         }
-=======
->>>>>>> 17f192e (modified for purchase order)
     }
 
 });
 
-<<<<<<< HEAD
 
+// ===============================
+// CHILD TABLE EVENTS
+// ===============================
 frappe.ui.form.on("Purchase Receipt Item", {
 
     qty(frm, cdt, cdn) {
@@ -91,8 +90,9 @@ frappe.ui.form.on("Purchase Taxes and Charges", {
 });
 
 
-=======
->>>>>>> 17f192e (modified for purchase order)
+// ===============================
+// ZERO TAX FUNCTION
+// ===============================
 function apply_zero_tax(frm) {
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
 
@@ -116,39 +116,9 @@ function apply_zero_tax(frm) {
 }
 
 
-<<<<<<< HEAD
-=======
 // ===============================
 // MARGINAL SCHEME LOGIC
 // ===============================
-
-// CHILD TABLE EVENTS
-frappe.ui.form.on("Purchase Receipt Item", {
-
-    qty(frm) {
-        apply_marginal_scheme(frm);
-    },
-
-    rate(frm) {
-        apply_marginal_scheme(frm);
-    },
-
-    custom_unit_taxable_value(frm) {
-        apply_marginal_scheme(frm);
-    }
-
-});
-
-frappe.ui.form.on("Purchase Taxes and Charges", {
-
-    rate(frm) {
-        apply_marginal_scheme(frm);
-    }
-
-});
-
-
->>>>>>> 17f192e (modified for purchase order)
 function apply_marginal_scheme(frm) {
 
     if (frm.doc.custom_purchase_type !== "Marginal") {
@@ -264,9 +234,12 @@ function apply_marginal_scheme(frm) {
         "grand_total",
         "rounded_total"
     ]);
-<<<<<<< HEAD
 }
 
+
+// ===============================
+// IMEI DIALOG
+// ===============================
 function open_imei_dialog(frm, row) {
 
     let table_data = [];
@@ -328,6 +301,3 @@ function open_imei_dialog(frm, row) {
 
     dialog.show();
 }
-=======
-}
->>>>>>> 17f192e (modified for purchase order)

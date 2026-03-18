@@ -3,16 +3,6 @@
 // ===============================
 frappe.ui.form.on("Purchase Invoice", {
 
-<<<<<<< HEAD
-    refresh(frm) {
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
-    },
-
-    onload(frm) {
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
-=======
     onload(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
@@ -21,17 +11,12 @@ frappe.ui.form.on("Purchase Invoice", {
     refresh(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
->>>>>>> 17f192e (modified for purchase order)
     },
 
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
-<<<<<<< HEAD
-    }
-=======
     },
->>>>>>> 17f192e (modified for purchase order)
 
     validate(frm) {
         apply_marginal_scheme(frm);
@@ -63,10 +48,6 @@ function apply_zero_tax(frm) {
 
     frm.trigger("calculate_taxes_and_totals");
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 17f192e (modified for purchase order)
 
 
 // ===============================
