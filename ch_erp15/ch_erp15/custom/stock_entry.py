@@ -73,6 +73,7 @@ def set_custom_status(StockEntry, status):
         return
     frappe.db.sql("SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE",doc.name)
     doc.custom_status = status
+    doc.flags.ignore_validate_update_after_submit = True
     doc.save()
     return {"custom_status": status}
 
@@ -88,6 +89,7 @@ def set_pending_qty(StockEntry):
         item.custom_pending_qty = item.custom_quantity
     insert_transit_entry(doc)    
     doc.custom_status = "Pending With Goods"
+    doc.flags.ignore_validate_update_after_submit = True
     doc.save()
     return {"status": doc.custom_status}
 
@@ -114,6 +116,7 @@ def received_qty(StockEntry, barcode):
             break
     if not found:
         frappe.throw(f"{item_code} not in this Stock Entry")
+    doc.flags.ignore_validate_update_after_submit = True
     doc.save()
     doc.reload()
     return {"items": [i.as_dict() for i in doc.items]}
@@ -142,6 +145,7 @@ def final_received(StockEntry, barcode):
             frappe.msgprint(f"{item.item_code} | Transferred: {item.custom_final_received_qty} | Pending: {item.custom_pending_qty}")
     if not found:
         frappe.throw(f"{item_code} not in this Stock Entry")
+    doc.flags.ignore_validate_update_after_submit = True
     doc.save()
     doc.reload()
     return {"items": [i.as_dict() for i in doc.items]}
@@ -156,6 +160,7 @@ def revert_goods(StockEntry):
     for item in doc.items:
         item.custom_pending_qty =0
         item.custom_receive_qty= 0
+    doc.flags.ignore_validate_update_after_submit = True
     doc.save()
     return "Reverted Successfully"
 
@@ -181,6 +186,7 @@ def transfer_custom_status(StockEntry):
                 item.custom_pending_qty= remaining
                 item.custom_receive_qty =0
                 item.custom_final_received_qty= 0
+    doc.flags.ignore_validate_update_after_submit = True
     doc.save()
     if doc.docstatus == 0:
         doc.submit()
@@ -225,6 +231,33 @@ def _get_transit_warehouse(company):
     abbr = frappe.get_cached_value("Company", company, "abbr")
     return f"Goods In Transit - {abbr}"
 
+def _get_serial_nos_from_item(item):
+    """Extract serial numbers from a Stock Entry Detail row."""
+    from erpnext.stock.doctype.serial_no.serial_no import get_serial_nos
+    if item.serial_no:
+        return get_serial_nos(item.serial_no)
+    if item.serial_and_batch_bundle:
+        entries = frappe.get_all(
+            "Serial and Batch Entry",
+            filters={"parent": item.serial_and_batch_bundle},
+            pluck="serial_no",
+        )
+        return [sn for sn in entries if sn]
+    return []
+
+def _update_serial_warehouse(serial_nos, warehouse, company):
+    """Update Serial No warehouse and status after transit stock movement."""
+    if not serial_nos:
+        return
+    sn_table = frappe.qb.DocType("Serial No")
+    (
+        frappe.qb.update(sn_table)
+        .set(sn_table.warehouse, warehouse)
+        .set(sn_table.status, "Active" if warehouse else "Inactive")
+        .set(sn_table.company, company)
+        .where(sn_table.name.isin(serial_nos))
+    ).run()
+
 def move_stock(doc, item, qty, from_wh, to_wh):
     if doc.stock_entry_type != "Material Transfer":
         return
@@ -268,6 +301,12 @@ def move_stock(doc, item, qty, from_wh, to_wh):
         "recalculate_rate": 1,
     }))
     make_sl_entries(sle, allow_negative_stock=False)
+
+    # Update Serial No warehouse for serialized items
+    if frappe.get_cached_value("Item", item.item_code, "has_serial_no"):
+        serial_nos = _get_serial_nos_from_item(item)
+        if serial_nos:
+            _update_serial_warehouse(serial_nos, to_wh, doc.company)
 
 def insert_transit_entry(doc):
     for item in doc.items:
