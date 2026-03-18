@@ -13,8 +13,11 @@ class CustomStockEntry(StockEntry):
 
     def validate(self):
         super().validate()
-        self.calculate_totals()
 
+        if self.stock_entry_type == "Material Transfer":
+            self.calculate_totals()
+        else:
+            return
         for item in self.items:
             if not item.custom_quantity:
                 item.custom_quantity = item.qty
@@ -40,20 +43,34 @@ class CustomStockEntry(StockEntry):
                 frappe.throw(f"{item.item_code}: Final receive qty cannot exceed original qty ({item.custom_quantity}).")
             if item.custom_final_received_qty > item.custom_receive_qty:
                 frappe.throw(f"{item.item_code}: Final receive qty cannot exceed received qty ({item.custom_receive_qty}).")
-
+    
     def calculate_totals(self):
-        total = 0
+        if self.stock_entry_type != "Material Transfer":
+            return
+        total_outgoing = 0
+        total_incoming = 0
         for item in self.items:
-            qty = item.custom_final_received_qty or item.qty
-            rate = item.basic_rate 
-            total += qty * rate
-        self.total_incoming_value = total
-        self.total_outgoing_value = total
-        self.base_grand_total = total
+            qty = (item.custom_final_received_qty or item.custom_receive_qty or item.custom_pending_qty)
+            rate = item.basic_rate
+            qty = qty or 0
+            rate = rate or 0 
+            amount = qty * rate
+
+            if item.s_warehouse:
+                total_outgoing += amount
+            if item.t_warehouse:
+                total_incoming += amount
+        self.total_outgoing_value = total_outgoing
+        self.total_incoming_value = total_incoming
+        self.total_amount = total_outgoing
+        self.base_total = total_outgoing
+        self.grand_total = total_outgoing
           
 @frappe.whitelist()
 def set_custom_status(StockEntry, status):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     frappe.db.sql("SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE",doc.name)
     doc.custom_status = status
     doc.save()
@@ -62,6 +79,8 @@ def set_custom_status(StockEntry, status):
 @frappe.whitelist()
 def set_pending_qty(StockEntry):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     frappe.db.sql("SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE",doc.name)
     if doc.custom_status == "Pending With Goods":
         frappe.throw("Stock already moved to Transit Warehouse")
@@ -75,6 +94,8 @@ def set_pending_qty(StockEntry):
 @frappe.whitelist()
 def received_qty(StockEntry, barcode):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     frappe.db.sql("SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE",doc.name)
     
     if doc.custom_status != "Pending With Goods":               
@@ -100,6 +121,8 @@ def received_qty(StockEntry, barcode):
 @frappe.whitelist()
 def final_received(StockEntry, barcode):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     frappe.db.sql("SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE",doc.name)
     if doc.custom_status != "Receive At Transit":
         frappe.throw("Transfer allowed only in 'Receive At Transit' status.")
@@ -126,6 +149,8 @@ def final_received(StockEntry, barcode):
 @frappe.whitelist()
 def revert_goods(StockEntry):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     revert_transit_entry(doc)
     doc.custom_status = "Draft"
     for item in doc.items:
@@ -137,6 +162,8 @@ def revert_goods(StockEntry):
 @frappe.whitelist()
 def transfer_custom_status(StockEntry):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     if doc.custom_status != "Receive At Transit":
         frappe.throw("Not allowed in this status")
     if not any(i.custom_final_received_qty for i in doc.items):
@@ -162,6 +189,8 @@ def transfer_custom_status(StockEntry):
 @frappe.whitelist()
 def goods_to_pending(StockEntry):
     doc = frappe.get_doc("Stock Entry", StockEntry)
+    if doc.stock_entry_type != "Material Transfer":
+        return
     if doc.custom_status!= "Partially Transferred":
         frappe.throw("Not a partially transferred document")
 
@@ -181,6 +210,8 @@ def goods_to_pending(StockEntry):
 # @frappe.whitelist()
 # def force_closed(StockEntry):
 #     doc = frappe.get_doc("Stock Entry", StockEntry)
+#     if doc.stock_entry_type != "Material Transfer":
+#         return
 #     if doc.custom_status!= "Partially Transferred":
 #         frappe.throw("Not a partially transferred document")
 #     doc.db_set("docstatus", 0)       
@@ -192,6 +223,8 @@ def goods_to_pending(StockEntry):
 
 TRANSIT_WAREHOUSE = "Goods In Transit - G"
 def move_stock(doc, item, qty, from_wh, to_wh):
+    if doc.stock_entry_type != "Material Transfer":
+        return
     if qty <= 0 or from_wh == to_wh:
         return
     posting_datetime = get_datetime(f"{doc.posting_date} {doc.posting_time}")
