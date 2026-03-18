@@ -3,22 +3,50 @@ frappe.ui.form.on("Purchase Order", {
     refresh(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm);
     },
 
     onload(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm);
     },
 
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
+        apply_on_marginal(frm);
     },
 
     validate(frm) {
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm);
     }
 
 });
+
+function apply_on_marginal(frm) {
+    const is_m = frm.doc.custom_purchase_type === "Marginal";
+    const style_id = "mt-hide-style";
+    let css = "";
+
+    if (!is_m) {
+        css = `
+        [data-fieldname="taxable_value"],
+        [data-fieldname="custom_unit_taxable_value"],
+        [data-fieldname="custom_exempted_value"] {
+            display: none !important;
+        }`;
+    }
+
+    let old = document.getElementById(style_id);
+    if (old) old.remove();
+
+    let style = document.createElement("style");
+    style.id = style_id;
+    style.innerHTML = css;
+    document.head.appendChild(style);
+    frm.refresh_field("items");
+}
 
 function apply_zero_tax(frm) {
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
