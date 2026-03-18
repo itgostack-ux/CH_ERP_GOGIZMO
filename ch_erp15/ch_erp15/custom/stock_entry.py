@@ -21,7 +21,7 @@ class CustomStockEntry(StockEntry):
         for item in self.items:
             if not item.custom_quantity:
                 item.custom_quantity = item.qty
-            if item.qty < 0 or item.custom_pending_qty < 0:
+            if item.qty < 0 or (item.custom_pending_qty or 0) < 0:
                 frappe.throw("Negative Qty not allowed")
             if self.custom_status == "Pending With Goods":
                 if not item.s_warehouse:
@@ -37,11 +37,11 @@ class CustomStockEntry(StockEntry):
             if self.custom_status == "Transferred" and  not item.custom_final_received_qty:
                 frappe.throw(f"{item.item_code}: Transfer qty cannot be 0")
 
-            if item.custom_receive_qty > item.custom_quantity:
+            if (item.custom_receive_qty or 0) > (item.custom_quantity or 0):
                 frappe.throw(f"{item.item_code}: Receive qty cannot exceed original qty ({item.custom_quantity}).")
-            if item.custom_final_received_qty > item.custom_quantity:
+            if (item.custom_final_received_qty or 0) > (item.custom_quantity or 0):
                 frappe.throw(f"{item.item_code}: Final receive qty cannot exceed original qty ({item.custom_quantity}).")
-            if item.custom_final_received_qty > item.custom_receive_qty:
+            if (item.custom_final_received_qty or 0) > (item.custom_receive_qty or 0):
                 frappe.throw(f"{item.item_code}: Final receive qty cannot exceed received qty ({item.custom_receive_qty}).")
     
     def calculate_totals(self):
@@ -221,7 +221,10 @@ def goods_to_pending(StockEntry):
 #     doc.submit()
 #     return "Stock Returned to Source Warehouse and Force Closed"
 
-TRANSIT_WAREHOUSE = "Goods In Transit - G"
+def _get_transit_warehouse(company):
+    abbr = frappe.get_cached_value("Company", company, "abbr")
+    return f"Goods In Transit - {abbr}"
+
 def move_stock(doc, item, qty, from_wh, to_wh):
     if doc.stock_entry_type != "Material Transfer":
         return
@@ -270,20 +273,20 @@ def insert_transit_entry(doc):
     for item in doc.items:
         if not item.custom_quantity:
             continue
-        move_stock(doc, item, item.custom_quantity, item.s_warehouse, TRANSIT_WAREHOUSE)
+        move_stock(doc, item, item.custom_quantity, item.s_warehouse, _get_transit_warehouse(doc.company))
 
 def revert_transit_entry(doc):
     for item in doc.items:
         if not item.custom_quantity:
             continue
-        move_stock(doc, item, item.custom_quantity, TRANSIT_WAREHOUSE, item.s_warehouse)
+        move_stock(doc, item, item.custom_quantity, _get_transit_warehouse(doc.company), item.s_warehouse)
 
 def transit_target_entry(doc):
 
     for item in doc.items:
         final_qty = item.custom_final_received_qty
         if final_qty > 0:
-            move_stock(doc,item,final_qty,TRANSIT_WAREHOUSE,item.t_warehouse)
+            move_stock(doc,item,final_qty,_get_transit_warehouse(doc.company),item.t_warehouse)
 
 # def transit_source(doc):
 #     for item in doc.items:
