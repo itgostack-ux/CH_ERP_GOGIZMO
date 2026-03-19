@@ -195,7 +195,12 @@ function apply_marginal_scheme(frm) {
 
         let margin_taxable = qty * margin_unit;
 
-        let exempted_value = flt(item.amount) - margin_taxable - total_gst;
+        let item_gst = 0;
+        if (total_margin_taxable > 0) {
+            item_gst = (margin_taxable / total_margin_taxable) * total_gst;
+        }
+
+        let exempted_value = flt(item.amount) - margin_taxable - item_gst;
 
         if (exempted_value < 0) {
             exempted_value = 0;
