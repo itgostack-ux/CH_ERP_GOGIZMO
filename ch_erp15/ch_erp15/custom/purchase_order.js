@@ -7,6 +7,10 @@ frappe.ui.form.on("Purchase Order", {
     },
 
     onload(frm) {
+        frm.cscript = frm.cscript || {};
+        frm.cscript.calculate_taxes_and_totals = function() {
+            return;
+        };
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
         apply_on_marginal(frm);

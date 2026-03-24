@@ -10,3 +10,5 @@ class CustomPurchaseOrder(PurchaseOrder):
         enforce_procurement_rules(self)
         super().validate()
         enforce_procurement_rules(self)
+
+        self.rounded_total

@@ -16,13 +16,13 @@ def enforce_procurement_rules(doc):
             )
         )
 
-    if purchase_type == "Marginal":
-        frappe.throw(
-            _(
-                "Marginal purchase mode is not yet supported by the server-side procurement posting flow. "
-                "Use Taxable or Unregistered until backend accounting support is implemented."
-            )
-        )
+    # if purchase_type == "Marginal":
+    #     frappe.throw(
+    #         _(
+    #             "Marginal purchase mode is not yet supported by the server-side procurement posting flow. "
+    #             "Use Taxable or Unregistered until backend accounting support is implemented."
+    #         )
+    #     )
 
     if purchase_type == "Unregistered":
         _apply_zero_tax(doc)

@@ -11,14 +11,36 @@ frappe.ui.form.on("Stock Entry", {
         setTimeout(() => {
             $('.form-message, .help-box, .document-help').remove();
         }, 100);
+        // shrink_system_columns(frm);
         
     },
+    // onload_post_render(frm) {
+    //     shrink_system_columns(frm);
+    // },
     stock_entry_type(frm) {
         apply_visibility(frm);
         apply_readonly(frm);
     }
 
 });
+
+// function shrink_system_columns(frm) {
+//     setTimeout(() => {
+//         let grid = frm.fields_dict.items.grid.wrapper[1];
+//         if (!grid) return;
+//         grid.querySelectorAll('.grid-row-check').forEach(el => {
+//             el.style.width = "48px";
+//             el.style.maxWidth = "48px";
+//         });
+
+//         grid.querySelectorAll('.row-index').forEach(el => {
+//             el.style.width = "55px";
+//             el.style.maxWidth = "55px";
+//             el.style.textAlign = "center";
+//         });
+
+//     }, 300);
+// }
 
 function apply_visibility(frm) {
     const is_mt = frm.doc.stock_entry_type === "Material Transfer";
