@@ -16,13 +16,8 @@ def enforce_procurement_rules(doc):
             )
         )
 
-    # if purchase_type == "Marginal":
-    #     frappe.throw(
-    #         _(
-    #             "Marginal purchase mode is not yet supported by the server-side procurement posting flow. "
-    #             "Use Taxable or Unregistered until backend accounting support is implemented."
-    #         )
-    #     )
+    if purchase_type == "Marginal":
+        _apply_marginal_scheme(doc)
 
     if purchase_type == "Unregistered":
         _apply_zero_tax(doc)
@@ -55,6 +50,90 @@ def _apply_zero_tax(doc):
     ):
         if hasattr(doc, fieldname):
             setattr(doc, fieldname, 0)
+
+
+def _apply_marginal_scheme(doc):
+    """Mirror the JS apply_marginal_scheme logic server-side.
+
+    Tax is calculated only on the marginal (taxable) value per item
+    (custom_unit_taxable_value × qty), not on the full invoice amount.
+    The remainder is recorded as the exempted value.
+    """
+    total_margin_taxable = 0.0
+    total_gst = 0.0
+    total_exempted = 0.0
+
+    # --- Item level: compute amounts and margin taxable ---
+    for item in doc.get("items") or []:
+        qty = flt(item.get("qty"))
+        rate = flt(item.get("rate"))
+        margin_unit = flt(item.get("custom_unit_taxable_value"))
+
+        if qty <= 0 or rate <= 0 or margin_unit <= 0:
+            continue
+
+        item_amount = qty * rate
+        margin_taxable = qty * margin_unit
+
+        item.amount = item_amount
+        item.base_amount = item_amount
+        item.taxable_value = margin_taxable
+
+        total_margin_taxable += margin_taxable
+
+    # --- Tax level: apply tax only on total margin taxable ---
+    for tax in doc.get("taxes") or []:
+        tax.tax_amount = 0
+        tax.base_tax_amount = 0
+        tax.total = 0
+        tax.base_total = 0
+
+        if cstr(tax.get("charge_type")) == "On Net Total" and total_margin_taxable > 0:
+            tax_amount = (total_margin_taxable * flt(tax.get("rate"))) / 100
+            tax.tax_amount = tax_amount
+            tax.base_tax_amount = tax_amount
+            tax.total = tax_amount
+            tax.base_total = tax_amount
+            total_gst += tax_amount
+
+    # --- Item level: compute exempted value ---
+    for item in doc.get("items") or []:
+        qty = flt(item.get("qty"))
+        margin_unit = flt(item.get("custom_unit_taxable_value"))
+        item_amount = flt(item.get("amount"))
+
+        if qty <= 0 or item_amount <= 0:
+            continue
+
+        margin_taxable = qty * margin_unit
+        item_gst = 0.0
+        if total_margin_taxable > 0:
+            item_gst = (margin_taxable / total_margin_taxable) * total_gst
+
+        exempted_value = item_amount - margin_taxable - item_gst
+        if exempted_value < 0:
+            exempted_value = 0.0
+
+        item.custom_exempted_value = exempted_value
+        total_exempted += exempted_value
+
+    # --- Document totals ---
+    doc.net_total = total_margin_taxable
+    doc.base_net_total = total_margin_taxable
+
+    for fieldname in (
+        "taxes_and_charges_added",
+        "base_taxes_and_charges_added",
+        "total_taxes_and_charges",
+        "base_total_taxes_and_charges",
+    ):
+        if hasattr(doc, fieldname):
+            setattr(doc, fieldname, total_gst)
+
+    grand_total = total_margin_taxable + total_gst + total_exempted
+    doc.grand_total = grand_total
+    doc.base_grand_total = grand_total
+    doc.rounded_total = flt(round(grand_total))
 
 
 def _validate_purchase_receipt_imeis(doc):
