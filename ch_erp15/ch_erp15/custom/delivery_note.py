@@ -51,9 +51,6 @@ def make_delivery_note(source_name, target_doc=None):
     return doc
 
 
-# =====================================================
-# GET EXEMPTED VALUE
-# =====================================================
 
 @frappe.whitelist()
 def get_exempted_value_from_serial(serial):
@@ -74,9 +71,6 @@ def get_exempted_value_from_serial(serial):
     return flt(result[0][0]) if result and result[0][0] else 0
 
 
-# =====================================================
-# FULL RECALCULATION (FIXED)
-# =====================================================
 
 def full_recalculation(doc, method=None):
 
@@ -111,7 +105,6 @@ def full_recalculation(doc, method=None):
 
         total_taxable += taxable_total
 
-    # ✅ FIX: Ensure tax row exists safely
     if not doc.taxes:
         doc.append("taxes", {})
 
@@ -132,9 +125,6 @@ def full_recalculation(doc, method=None):
     doc.calculate_taxes_and_totals()
 
 
-# =====================================================
-# BEFORE SUBMIT (FIXED)
-# =====================================================
 
 def before_submit_all(doc, method=None):
 
@@ -179,9 +169,6 @@ def before_submit_all(doc, method=None):
     doc.calculate_taxes_and_totals()
 
 
-# =====================================================
-# AUTO SALES INVOICE
-# =====================================================
 
 def create_sales_invoice_on_submit(doc, method=None):
 
