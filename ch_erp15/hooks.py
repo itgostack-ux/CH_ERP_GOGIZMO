@@ -50,8 +50,17 @@ doc_events = {
 
 
     "Stock Entry": {
-        "validate":
+        "validate": [
             "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity",
+            "ch_erp15.ch_erp15.store_request_api.validate_transfer_qty",
+        ],
+        "on_submit":
+            "ch_erp15.ch_erp15.store_request_api.notify_store_on_transfer",
+    },
+
+    "Material Request": {
+        "on_update":
+            "ch_erp15.ch_erp15.store_request_api.notify_on_mr_update",
     },
 
     "Purchase Receipt": {
@@ -73,7 +82,9 @@ fixtures = [
 
 
 scheduler_events = {
-    "hourly": [
-        "ch_erp15.ch_erp15.store_request_api.check_sla_breach",
-    ],
+    "cron": {
+        "*/15 * * * *": [
+            "ch_erp15.ch_erp15.store_request_api.check_sla_breach",
+        ],
+    },
 }
