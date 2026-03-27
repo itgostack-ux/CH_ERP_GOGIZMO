@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "creation": "2026-03-27 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "source_type",
+  "source_location",
+  "planned_qty",
+  "route_type",
+  "execution_doctype",
+  "execution_docname",
+  "status",
+  "notes",
+  "source_warehouse",
+  "transferred_qty",
+  "received_qty",
+  "pending_qty",
+  "expected_date",
+  "actual_completion_date",
+  "source_store"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Source Type",
+   "options": "Store\nWarehouse\nSupplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_location",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source Location"
+  },
+  {
+   "fieldname": "planned_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Planned Qty",
+   "precision": "3",
+   "reqd": 1
+  },
+  {
+   "fieldname": "route_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Route Type",
+   "options": "Via Warehouse\nDirect To Store",
+   "reqd": 1
+  },
+  {
+   "fieldname": "execution_doctype",
+   "fieldtype": "Data",
+   "label": "Execution Doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "execution_docname",
+   "fieldtype": "Dynamic Link",
+   "label": "Execution Doc",
+   "options": "execution_doctype",
+   "read_only": 1
+  },
+  {
+   "default": "Planned",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Planned\nCreated\nIn Transit\nPartially Received\nCompleted\nClosed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "Source Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "transferred_qty",
+   "fieldtype": "Float",
+   "label": "Transferred Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_qty",
+   "fieldtype": "Float",
+   "label": "Received Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_qty",
+   "fieldtype": "Float",
+   "label": "Pending Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_date",
+   "fieldtype": "Date",
+   "label": "Expected Date"
+  },
+  {
+   "fieldname": "actual_completion_date",
+   "fieldtype": "Date",
+   "label": "Actual Completion Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_store",
+   "fieldtype": "Link",
+   "label": "Source Store",
+   "options": "CH Store"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-03-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ch Erp15",
+ "name": "CH Store Material Fulfillment Plan",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

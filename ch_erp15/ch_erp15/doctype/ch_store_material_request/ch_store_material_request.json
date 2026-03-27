@@ -1,0 +1,390 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-03-27 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "company",
+  "store",
+  "pos_profile",
+  "destination_warehouse",
+  "requested_by",
+  "required_by_date",
+  "priority",
+  "status",
+  "request_notes",
+  "approval_section",
+  "approved_by",
+  "approved_on",
+  "rejection_reason",
+  "processing_section",
+  "processing_started_by",
+  "processing_started_on",
+  "processed_by_stock_team",
+  "sla_breach_date",
+  "sla_breached",
+  "summary_section",
+  "total_requested_qty",
+  "total_planned_internal_qty",
+  "summary_col1",
+  "total_planned_purchase_qty",
+  "total_shortage_qty",
+  "total_received_qty",
+  "summary_col2",
+  "percent_fulfilled",
+  "line_items_section",
+  "items",
+  "plan_section",
+  "fulfillment_plan",
+  "receipt_section",
+  "receipts",
+  "closure_section",
+  "closure_reason_code",
+  "closure_reason_detail",
+  "closed_by",
+  "closed_on",
+  "closure_log"
+ ],
+ "fields": [
+  {
+   "default": "SMR-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "SMR-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "store",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Store",
+   "options": "CH Store",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "required_by_date",
+   "fieldtype": "Date",
+   "label": "Required By Date"
+  },
+  {
+   "default": "Standard",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Urgent\nStandard\nLow",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nRejected\nUnder Review\nAllocation Planned\nPartially Allocated\nProcurement Initiated\nIn Transit\nPartially Received\nFulfilled\nClosed With Reason\nCancelled",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_notes",
+   "fieldtype": "Small Text",
+   "label": "Request Notes"
+  },
+  {
+   "fieldname": "processing_section",
+   "fieldtype": "Section Break",
+   "label": "Processing"
+  },
+  {
+   "fieldname": "processing_started_by",
+   "fieldtype": "Link",
+   "label": "Processing Started By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "processing_started_on",
+   "fieldtype": "Datetime",
+   "label": "Processing Started On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "processed_by_stock_team",
+   "fieldtype": "Check",
+   "label": "Processed by Stock Team",
+   "read_only": 1
+  },
+  {
+   "fieldname": "summary_section",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "total_requested_qty",
+   "fieldtype": "Float",
+   "label": "Total Requested Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_planned_internal_qty",
+   "fieldtype": "Float",
+   "label": "Total Planned Internal Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_planned_purchase_qty",
+   "fieldtype": "Float",
+   "label": "Total Planned Purchase Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_received_qty",
+   "fieldtype": "Float",
+   "label": "Total Received Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "percent_fulfilled",
+   "fieldtype": "Percent",
+   "label": "Percent Fulfilled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "line_items_section",
+   "fieldtype": "Section Break",
+   "label": "Requested Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "CH Store Material Request Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan_section",
+   "fieldtype": "Section Break",
+   "label": "Fulfillment Plan"
+  },
+  {
+   "fieldname": "fulfillment_plan",
+   "fieldtype": "Table",
+   "label": "Fulfillment Plan",
+   "options": "CH Store Material Fulfillment Plan"
+  },
+  {
+   "fieldname": "receipt_section",
+   "fieldtype": "Section Break",
+   "label": "Receipts"
+  },
+  {
+   "fieldname": "receipts",
+   "fieldtype": "Table",
+   "label": "Receipts",
+   "options": "CH Store Material Receipt"
+  },
+  {
+   "fieldname": "closure_section",
+   "fieldtype": "Section Break",
+   "label": "Closure"
+  },
+  {
+   "fieldname": "closure_reason_code",
+   "fieldtype": "Select",
+   "label": "Closure Reason Code",
+   "options": "Not Required\nDuplicate\nWrong Item\nBudget Hold\nVendor Delay\nOther",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closure_reason_detail",
+   "fieldtype": "Small Text",
+   "label": "Closure Reason Detail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_by",
+   "fieldtype": "Link",
+   "label": "Closed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_on",
+   "fieldtype": "Datetime",
+   "label": "Closed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closure_log",
+   "fieldtype": "Table",
+   "label": "Closure Log",
+   "options": "CH Store Material Closure Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_section",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Small Text",
+   "label": "Rejection Reason",
+   "read_only": 1,
+   "depends_on": "eval:doc.status=='Rejected'"
+  },
+  {
+   "fieldname": "sla_breach_date",
+   "fieldtype": "Datetime",
+   "label": "SLA Breach Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sla_breached",
+   "fieldtype": "Check",
+   "label": "SLA Breached",
+   "read_only": 1
+  },
+  {
+   "fieldname": "destination_warehouse",
+   "fieldtype": "Link",
+   "label": "Destination Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "summary_col1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "summary_col2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_shortage_qty",
+   "fieldtype": "Float",
+   "label": "Total Shortage Qty",
+   "precision": "3",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-03-27 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ch Erp15",
+ "name": "CH Store Material Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "name",
+ "track_changes": 1
+}

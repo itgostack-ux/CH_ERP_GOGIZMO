@@ -5,6 +5,10 @@ app_description = "Gogizmo ERP Customization Suite"
 app_email = "manonraj@gostack.in"
 app_license = "mit"
 
+after_install = "ch_erp15.setup.after_install"
+after_migrate = "ch_erp15.setup.after_migrate"
+before_uninstall = "ch_erp15.setup.before_uninstall"
+
 
 
 override_doctype_class = {
@@ -27,6 +31,7 @@ doctype_js = {
     "Purchase Invoice": "ch_erp15/custom/purchase_invoice.js",
     "Stock Entry": "ch_erp15/custom/stock_entry.js",
     "Delivery Note": "ch_erp15/custom/delivery_note.js",
+    "Material Request": "ch_erp15/custom/material_request.js",
 }
 
 
@@ -46,7 +51,7 @@ doc_events = {
 
     "Stock Entry": {
         "validate":
-            "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity"
+            "ch_erp15.ch_erp15.doctype.warehouse_capacity.warehouse_capacity.validate_warehouse_capacity",
     },
 
     "Purchase Receipt": {
@@ -65,3 +70,10 @@ doc_events = {
 fixtures = [
     "Client Script",
 ]
+
+
+scheduler_events = {
+    "hourly": [
+        "ch_erp15.ch_erp15.store_request_api.check_sla_breach",
+    ],
+}
