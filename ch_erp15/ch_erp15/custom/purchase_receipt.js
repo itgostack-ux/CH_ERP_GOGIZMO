@@ -6,33 +6,47 @@ frappe.ui.form.on("Purchase Receipt", {
     refresh(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
     },
 
     onload(frm) {
         frm.cscript = frm.cscript || {};
+        if (!frm._original_calculation) {
+            frm._original_calculation = frm.cscript.calculate_taxes_and_totals;
+        }
         frm.cscript.calculate_taxes_and_totals = function() {
-            return;
+            if (frm.doc.custom_purchase_type === "Marginal") {
+                apply_zero_tax(frm);
+                apply_marginal_scheme(frm);
+                apply_on_marginal(frm);
+                return;
+            }
+            if (frm._original_calculation) {
+                frm._original_calculation.call(frm);
+            }
         };
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
     },
 
     before_save(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
     },
 
     before_submit(frm) {
         apply_zero_tax(frm);
+        apply_on_marginal(frm)
     },
 
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
     },
 
     validate(frm) {
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
 
         // Ensure IMEI child table has valid data
         if (frm.doc.custom_track && frm.doc.custom_track.length > 0) {
@@ -50,7 +64,29 @@ frappe.ui.form.on("Purchase Receipt", {
     }
 
 });
+// function apply_on_marginal(frm) {
+//     const is_m = frm.doc.custom_purchase_type === "Marginal";
+//     const style_id = "mt-hide-style";
+//     let css = "";
 
+//     if (!is_m) {
+//         css = `
+//         [data-fieldname="taxable_value"],
+//         [data-fieldname="custom_unit_taxable_value"],
+//         [data-fieldname="custom_exempted_value"] {
+//             display: none !important;
+//         }`;
+//     }
+
+//     let old = document.getElementById(style_id);
+//     if (old) old.remove();
+
+//     let style = document.createElement("style");
+//     style.id = style_id;
+//     style.innerHTML = css;
+//     document.head.appendChild(style);
+//     frm.refresh_field("items");
+// }
 
 // ===============================
 // CHILD TABLE EVENTS

@@ -5,29 +5,63 @@ frappe.ui.form.on("Purchase Invoice", {
 
     onload(frm) {
         frm.cscript = frm.cscript || {};
+        if (!frm._original_calculation) {
+            frm._original_calculation = frm.cscript.calculate_taxes_and_totals;
+        }
         frm.cscript.calculate_taxes_and_totals = function() {
-            return;
+            if (frm.doc.custom_purchase_type === "Marginal") {
+                apply_zero_tax(frm);
+                apply_marginal_scheme(frm);
+                apply_on_marginal(frm);
+                return;
+            }
+            if (frm._original_calculation) {
+                frm._original_calculation.call(frm);
+            }
         };
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
     },
-
     refresh(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
     },
 
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
     },
 
     validate(frm) {
         apply_marginal_scheme(frm);
+        apply_on_marginal(frm)
+        
     }
 });
 
+// function apply_on_marginal(frm) {
+//     const is_m = frm.doc.custom_purchase_type === "Marginal";
+//     const style_id = "mt-hide-style";
+//     let css = "";
 
+//     if (!is_m) {
+//         css = `
+//         [data-fieldname="taxable_value"],
+//         [data-fieldname="custom_unit_taxable_value"],
+//         [data-fieldname="custom_exempted_value"] {
+//             display: none !important;
+//         }`;
+//     }
+
+//     let old = document.getElementById(style_id);
+//     if (old) old.remove();
+
+//     let style = document.createElement("style");
+//     style.id = style_id;
+//     style.innerHTML = css;
+//     document.head.appendChild(style);
+//     frm.refresh_field("items");
+// }
 // ===============================
 // ZERO TAX LOGIC (UNCHANGED)
 // ===============================
@@ -197,4 +231,13 @@ function apply_marginal_scheme(frm) {
         "grand_total",
         "rounded_total"
     ]);
+    
+    // frappe.call({
+    //     method: "ch_erp15.ch_erp15.custom.purchase_invoice.apply_marginal_backend",
+    //     args: {
+    //         doc: frm.doc
+    //     },
+    //     freeze: false
+    // });
+
 }

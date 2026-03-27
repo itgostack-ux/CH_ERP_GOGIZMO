@@ -12,13 +12,13 @@ let scan_in_progress = false;
 
 frappe.ui.form.on("Delivery Note", {
 
-    onload(frm) {
-        update_document_tax_amount(frm);
-    },
+    // onload(frm) {
+    //     update_document_tax_amount(frm);
+    // },
 
-    refresh(frm) {
-        update_document_tax_amount(frm);
-    },
+    // refresh(frm) {
+    //     update_document_tax_amount(frm);
+    // },
 
     custom_scan_imei__serial_no(frm) {
 

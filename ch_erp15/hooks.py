@@ -21,8 +21,6 @@ override_whitelisted_methods = {
         "ch_erp15.ch_erp15.custom.delivery_note.make_delivery_note"
 }
 
-
-
 doctype_js = {
     "Purchase Order": "ch_erp15/custom/purchase_order.js",
     "Purchase Receipt": "ch_erp15/custom/purchase_receipt.js",
@@ -34,12 +32,17 @@ doctype_js = {
 
 
 doc_events = {
-
     "Delivery Note": {
-        "validate": "ch_erp15.ch_erp15.custom.delivery_note.full_recalculation",
-        "before_save": "ch_erp15.ch_erp15.custom.delivery_note.full_recalculation",
-        "on_submit": "ch_erp15.ch_erp15.custom.delivery_note.create_sales_invoice_on_submit"
+        "validate":
+            "ch_erp15.ch_erp15.custom.delivery_note.full_recalculation",
+
+        "before_submit":
+            "ch_erp15.ch_erp15.custom.delivery_note.before_submit_all",
+
+        "on_submit":
+            "ch_erp15.ch_erp15.custom.delivery_note.create_sales_invoice_on_submit"
     },
+
 
     "Stock Entry": {
         "validate":

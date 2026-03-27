@@ -6,14 +6,22 @@ frappe.ui.form.on("Purchase Order", {
         apply_on_marginal(frm);
     },
 
-    onload(frm) {
+   onload(frm) {
         frm.cscript = frm.cscript || {};
+        if (!frm._original_calculation) {
+            frm._original_calculation = frm.cscript.calculate_taxes_and_totals;
+        }
         frm.cscript.calculate_taxes_and_totals = function() {
-            return;
+            if (frm.doc.custom_purchase_type === "Marginal") {
+                apply_zero_tax(frm);
+                apply_marginal_scheme(frm);
+                apply_on_marginal(frm);
+                return;
+            }
+            if (frm._original_calculation) {
+                frm._original_calculation.call(frm);
+            }
         };
-        apply_zero_tax(frm);
-        apply_marginal_scheme(frm);
-        apply_on_marginal(frm);
     },
 
     custom_purchase_type(frm) {
@@ -28,29 +36,29 @@ frappe.ui.form.on("Purchase Order", {
 
 });
 
-function apply_on_marginal(frm) {
-    const is_m = frm.doc.custom_purchase_type === "Marginal";
-    const style_id = "mt-hide-style";
-    let css = "";
+// function apply_on_marginal(frm) {
+//     const is_m = frm.doc.custom_purchase_type === "Marginal";
+//     const style_id = "mt-hide-style";
+//     let css = "";
 
-    if (!is_m) {
-        css = `
-        [data-fieldname="taxable_value"],
-        [data-fieldname="custom_unit_taxable_value"],
-        [data-fieldname="custom_exempted_value"] {
-            display: none !important;
-        }`;
-    }
+//     if (!is_m) {
+//         css = `
+//         [data-fieldname="taxable_value"],
+//         [data-fieldname="custom_unit_taxable_value"],
+//         [data-fieldname="custom_exempted_value"] {
+//             display: none !important;
+//         }`;
+//     }
 
-    let old = document.getElementById(style_id);
-    if (old) old.remove();
+//     let old = document.getElementById(style_id);
+//     if (old) old.remove();
 
-    let style = document.createElement("style");
-    style.id = style_id;
-    style.innerHTML = css;
-    document.head.appendChild(style);
-    frm.refresh_field("items");
-}
+//     let style = document.createElement("style");
+//     style.id = style_id;
+//     style.innerHTML = css;
+//     document.head.appendChild(style);
+//     frm.refresh_field("items");
+// }
 
 function apply_zero_tax(frm) {
     const is_unregistered = frm.doc.custom_purchase_type === "Unregistered";
