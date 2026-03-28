@@ -165,13 +165,28 @@ CUSTOM_FIELDS = {
 }
 
 
+def _filter_ready_fields(fields_dict):
+    """Skip Link fields whose target DocType doesn't exist yet."""
+    ready = {}
+    for dt, field_list in fields_dict.items():
+        filtered = []
+        for f in field_list:
+            if f.get("fieldtype") == "Link" and f.get("options"):
+                if not frappe.db.exists("DocType", f["options"]):
+                    continue
+            filtered.append(f)
+        if filtered:
+            ready[dt] = filtered
+    return ready
+
+
 def after_install():
     _ensure_module_def()
-    create_custom_fields(CUSTOM_FIELDS, update=True)
+    create_custom_fields(_filter_ready_fields(CUSTOM_FIELDS), update=True)
 
 
 def after_migrate():
-    create_custom_fields(CUSTOM_FIELDS, update=True)
+    create_custom_fields(_filter_ready_fields(CUSTOM_FIELDS), update=True)
 
 
 def before_uninstall():
