@@ -44,23 +44,7 @@ function apply_on_marginal(frm) {
     const style_id = "mt-hide-style";
     let css = "";
  
-    if (!is_m) {
-        css += `
-        /* Hide content but KEEP column width */
-        [data-fieldname="taxable_value"],
-        [data-fieldname="custom_unit_taxable_value"],
-        [data-fieldname="custom_exempted_value"] {
-            visibility: hidden !important;
-        }
- 
-        /* Optional: remove input interaction */
-        [data-fieldname="taxable_value"] input,
-        [data-fieldname="custom_unit_taxable_value"] input,
-        [data-fieldname="custom_exempted_value"] input {
-            pointer-events: none;
-        }
-        `;
-    }
+
  
     let old = document.getElementById(style_id);
     if (old) old.remove();

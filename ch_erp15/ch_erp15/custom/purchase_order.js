@@ -112,7 +112,7 @@ function apply_zero_tax(frm) {
     frm.doc.rounded_total = 0;
 
     frm.refresh_fields(["taxes", "net_total", "grand_total"]);
-}
+} 
 
 
 // =====================================================
