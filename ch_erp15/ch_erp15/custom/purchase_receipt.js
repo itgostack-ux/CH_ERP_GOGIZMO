@@ -6,7 +6,6 @@ frappe.ui.form.on("Purchase Receipt", {
     refresh(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
-        apply_on_marginal(frm)
     },
 
     onload(frm) {
@@ -14,11 +13,10 @@ frappe.ui.form.on("Purchase Receipt", {
         if (!frm._original_calculation) {
             frm._original_calculation = frm.cscript.calculate_taxes_and_totals;
         }
-        frm.cscript.calculate_taxes_and_totals = function() {
+        frm.cscript.calculate_taxes_and_totals = function () {
             if (frm.doc.custom_purchase_type === "Marginal") {
                 apply_zero_tax(frm);
                 apply_marginal_scheme(frm);
-                apply_on_marginal(frm);
                 return;
             }
             if (frm._original_calculation) {
@@ -27,86 +25,141 @@ frappe.ui.form.on("Purchase Receipt", {
         };
     },
 
-    before_save(frm) {
+    before_save: async function (frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
-        apply_on_marginal(frm)
+        let all_serials = [];
+
+        (frm.doc.items || []).forEach(item => {
+
+            if (!item.custom_imei) {
+                frappe.throw(`Please select IMEI option (Yes/No) for Item ${item.item_code}`);
+            }
+
+            item.serial_and_batch_bundle = null;
+
+            let list = (item.serial_no || "")
+                .split("\n")
+                .map(i => i.trim())
+                .filter(i => i);
+
+            if (item.custom_imei === "Yes") {
+                if (list.length !== item.qty) {
+                    frappe.throw(`IMEI count must match Qty for Item ${item.item_code}`);
+                }
+            }
+
+            if (item.custom_imei === "No") {
+                if (!item.serial_no) {
+                    frappe.throw(`Serial No is mandatory for Item ${item.item_code}`);
+                }
+
+                if (list.length !== item.qty) {
+                    frappe.throw(`Serial count must match Qty for Item ${item.item_code}`);
+                }
+            }
+
+            all_serials.push(...list);
+        });
+
+        if (all_serials.length) {
+
+            let existing = await frappe.db.get_list("Serial No", {
+                filters: { name: ["in", all_serials] },
+                fields: ["name", "warehouse", "status"]
+            });
+
+            if (existing.length) {
+
+                let msg = "";
+
+                existing.forEach(s => {
+
+                    if (frm._reused_serials && frm._reused_serials.includes(s.name)) {
+                        return;
+                    }
+
+                    msg += `Serial No ${s.name} already exists in ${s.warehouse || "N/A"} (Status: ${s.status})<br>`;
+                });
+
+                if (msg) {
+                    frappe.throw(msg);
+                }
+            }
+        }
     },
 
     before_submit(frm) {
         apply_zero_tax(frm);
-        apply_on_marginal(frm)
+        ``
     },
 
     custom_purchase_type(frm) {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
-        apply_on_marginal(frm)
     },
 
     validate(frm) {
         apply_marginal_scheme(frm);
-        apply_on_marginal(frm)
 
         // Ensure IMEI child table has valid data
-        if (frm.doc.custom_track && frm.doc.custom_track.length > 0) {
-            let duplicate_check = {};
-            for (let d of frm.doc.custom_track) {
-                if (!d.imei_number) {
-                    frappe.throw("All IMEI numbers are required.");
+        (frm.doc.items || []).forEach(item => {
+
+            if (item.custom_imei === "No") {
+
+                if (!item.serial_no || !item.serial_no.trim()) {
+                    frappe.throw(`Serial No is mandatory for Item ${item.item_code}`);
                 }
-                if (duplicate_check[d.imei_number]) {
-                    frappe.throw(`Duplicate IMEI number found: ${d.imei_number}`);
+
+                let serial_list = item.serial_no
+                    .split("\n")
+                    .map(i => i.trim())
+                    .filter(i => i);
+
+                if (serial_list.length !== item.qty) {
+                    frappe.throw(`Serial count must match Qty for Item ${item.item_code}`);
                 }
-                duplicate_check[d.imei_number] = true;
+
+                if (new Set(serial_list).size !== serial_list.length) {
+                    frappe.throw(`Duplicate Serial No found for Item ${item.item_code}`);
+                }
             }
-        }
+
+            item.serial_and_batch_bundle = null;
+        });
     }
 
+
+
 });
-function apply_on_marginal(frm) {
-    const is_m = frm.doc.custom_purchase_type === "Marginal";
-    const style_id = "mt-hide-style";
-    let css = "";
- 
-    if (!is_m) {
-        css += `
-        /* Hide content but KEEP column width */
-        [data-fieldname="taxable_value"],
-        [data-fieldname="custom_unit_taxable_value"],
-        [data-fieldname="custom_exempted_value"] {
-            visibility: hidden !important;
-        }
- 
-        /* Optional: remove input interaction */
-        [data-fieldname="taxable_value"] input,
-        [data-fieldname="custom_unit_taxable_value"] input,
-        [data-fieldname="custom_exempted_value"] input {
-            pointer-events: none;
-        }
-        `;
-    }
- 
-    let old = document.getElementById(style_id);
-    if (old) old.remove();
- 
-    let style = document.createElement("style");
-    style.id = style_id;
-    style.innerHTML = css;
-    document.head.appendChild(style);
- 
-    frm.refresh_field("items");
-}
- 
+
+
 
 // ===============================
 // CHILD TABLE EVENTS
 // ===============================
 frappe.ui.form.on("Purchase Receipt Item", {
 
-    qty(frm, cdt, cdn) {
+    qty: async function (frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+
         apply_marginal_scheme(frm);
+
+        if (row.custom_imei === "No") {
+
+            frappe.model.set_value(cdt, cdn, "serial_no", "");
+
+            await generate_auto_serial(frm, row);
+        }
+
+        if (row.custom_imei === "Yes") {
+            if (!row.qty || row.qty <= 0) return;
+
+            frappe.model.set_value(cdt, cdn, "serial_no", "");
+            open_imei_dialog(frm, row);
+        }
     },
+
 
     rate(frm, cdt, cdn) {
         apply_marginal_scheme(frm);
@@ -116,20 +169,46 @@ frappe.ui.form.on("Purchase Receipt Item", {
         apply_marginal_scheme(frm);
     },
 
-    custom_imei_track(frm, cdt, cdn) {
+    custom_imei: async function (frm, cdt, cdn) {
         let row = locals[cdt][cdn];
-        if (!row.custom_imei_track) return;
 
-        if (!row.qty || row.qty <= 0) {
-            frappe.msgprint("Please enter Qty first");
-            frappe.model.set_value(cdt, cdn, "custom_imei_track", 0);
-            return;
+        if (row.custom_imei === "Yes") {
+
+            if (!row.qty || row.qty <= 0) {
+                frappe.msgprint("Please enter Qty first");
+                frappe.model.set_value(cdt, cdn, "custom_imei", "No");
+                return;
+            }
+
+            frappe.model.set_value(cdt, cdn, "serial_no", "");
+            open_imei_dialog(frm, row);
+
+        } else {
+            await generate_auto_serial(frm, row);
         }
 
-        open_imei_dialog(frm, row);
-    }
+        toggle_imei_field(frm, row);
+    },
+
+    item_code(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+
+        if (row.item_code) {
+            frappe.db.get_value("Item", row.item_code,
+                ["has_serial_no", "serial_no_series"],
+                (r) => {
+
+                    frappe.model.set_value(cdt, cdn, "has_serial_no", r.has_serial_no);
+                    frappe.model.set_value(cdt, cdn, "serial_no_series", r.serial_no_series);
+
+                }
+            );
+        }
+    },
+
 
 });
+
 
 
 frappe.ui.form.on("Purchase Taxes and Charges", {
@@ -297,9 +376,23 @@ function apply_marginal_scheme(frm) {
 // IMEI DIALOG
 // ===============================
 function open_imei_dialog(frm, row) {
+    let existing_imeis = [];
+
+    if (row.serial_no) {
+        existing_imeis = row.serial_no
+            .split("\n")
+            .map(i => i.trim())
+            .filter(i => i);
+    }
 
     let table_data = [];
-    for (let i = 0; i < row.qty; i++) {
+
+    existing_imeis.forEach(imei => {
+        table_data.push({ item_code: row.item_code, imei_no: imei });
+    });
+
+    // Fill empty rows for remaining quantity
+    for (let i = existing_imeis.length; i < row.qty; i++) {
         table_data.push({ item_code: row.item_code, imei_no: "" });
     }
 
@@ -307,6 +400,12 @@ function open_imei_dialog(frm, row) {
         title: "IMEI Entry",
         size: "large",
         fields: [
+            {
+                fieldname: "scanner_input",
+                fieldtype: "Data",
+                label: "Scan IMEI",
+                placeholder: "Scan IMEI here (auto-update)",
+            },
             {
                 fieldname: "imei_table",
                 fieldtype: "Table",
@@ -316,7 +415,7 @@ function open_imei_dialog(frm, row) {
                 data: table_data,
                 fields: [
                     { fieldtype: "Data", fieldname: "item_code", label: "Item Code", read_only: 1, in_list_view: 1 },
-                    { fieldtype: "Data", fieldname: "imei_no", label: "IMEI Number", reqd: 1, in_list_view: 1 }
+                    { fieldtype: "Data", fieldname: "imei_no", label: "IMEI Number", read_only: 1, reqd: 1, in_list_view: 1 }
                 ]
             }
         ],
@@ -325,30 +424,21 @@ function open_imei_dialog(frm, row) {
         primary_action() {
             let imeis = dialog.fields_dict.imei_table.grid.get_data();
 
-            if (!imeis.length || imeis.some(d => !d.imei_no)) {
-                frappe.msgprint("All IMEI numbers are required");
-                return;
+            let list = imeis.map(d => d.imei_no.trim());
+
+            if (list.some(i => !i)) {
+                frappe.throw("All IMEI slots must be filled");
             }
 
-            let list = imeis.map(d => d.imei_no);
             if (new Set(list).size !== list.length) {
-                frappe.msgprint("Duplicate IMEI numbers found");
-                return;
+                frappe.throw("Duplicate IMEI numbers found");
             }
 
-            frm.doc.custom_track = (frm.doc.custom_track || []).filter(
-                d => d.purchase_receipt_item !== row.name
-            );
-
-            imeis.forEach(d => {
-                let child = frm.add_child("custom_track");
-                child.item_code = row.item_code;
-                child.imei_number = d.imei_no;
-                child.purchase_receipt_item = row.name;
-            });
-
-            frm.refresh_field("custom_track");
-            frm.dirty();
+            if (list.length !== row.qty) {
+                frappe.throw("IMEI count must match Qty");
+            }
+            row.serial_no = list.join("\n");
+            frm.refresh_field("items");
 
             frappe.show_alert({ message: "IMEI saved successfully", indicator: "green" });
             dialog.hide();
@@ -356,4 +446,137 @@ function open_imei_dialog(frm, row) {
     });
 
     dialog.show();
+
+
+    let scanner_input = dialog.fields_dict.scanner_input.$input;
+
+    scanner_input.on("keydown", async function (e) {
+
+        if (e.key !== "Enter") return;
+
+        e.preventDefault();
+
+        let val = scanner_input.val().trim();
+        if (!val) return;
+
+        let imei_table = dialog.fields_dict.imei_table.grid.get_data();
+
+        if (imei_table.some(d => d.imei_no === val)) {
+            frappe.msgprint(`IMEI ${val} already entered`);
+            scanner_input.val("");
+            return;
+        }
+
+        let existing = await frappe.db.get_list("Serial No", {
+            filters: { name: val },
+            fields: ["name", "status"],
+            limit: 1
+        });
+
+        if (existing.length > 0) {
+            let status = existing[0].status;
+
+            if (status !== "Delivered") {
+                frappe.msgprint(`IMEI ${val} already exists`);
+                scanner_input.val("");
+                return;
+            }
+        }
+
+        let empty_row = imei_table.find(d => !d.imei_no);
+
+        if (!empty_row) {
+            frappe.msgprint("All IMEI slots are filled");
+            scanner_input.val("");
+            return;
+        }
+
+        empty_row.imei_no = val;
+
+        dialog.fields_dict.imei_table.grid.refresh();
+
+        scanner_input.val("");
+    });
+}
+
+async function generate_auto_serial(frm, row) {
+    if (!row.item_code || !row.qty) return;
+    if (row.custom_imei === "Yes") return;
+
+    if (row.serial_no && row.serial_no.trim()) return;
+
+    let series = row.serial_no_series || "SN-.#####";
+
+    let prefix = series.split("#")[0].replace(".", "");
+
+    let all_serials = await frappe.db.get_list("Serial No", {
+        filters: { item_code: row.item_code },
+        fields: ["name", "status"],
+        order_by: "creation asc",
+        limit: 1000
+    });
+
+    let last_number = 0;
+    let reused_serials = [];
+
+    for (let s of all_serials) {
+        let match = s.name.match(new RegExp(`^${prefix}(\\d+)$`));
+        if (match) {
+            let num = parseInt(match[1]);
+            last_number = Math.max(last_number, num);
+
+            if (s.status === "Delivered") {
+                reused_serials.push({ name: s.name, number: num });
+            }
+        }
+    }
+
+    reused_serials.sort((a, b) => a.number - b.number);
+
+    let serials_to_assign = [];
+    let qty = row.qty;
+
+    frm._reused_serials = frm._reused_serials || [];
+
+    for (let i = 0; i < reused_serials.length && serials_to_assign.length < qty; i++) {
+        let sn = reused_serials[i].name;
+
+        serials_to_assign.push(sn);
+
+        if (!frm._reused_serials.includes(sn)) {
+            frm._reused_serials.push(sn);
+        }
+    }
+
+    let remaining = qty - serials_to_assign.length;
+
+    for (let i = 0; i < remaining; i++) {
+        last_number++;
+        serials_to_assign.push(
+            `${prefix}${String(last_number).padStart(5, "0")}`
+        );
+    }
+
+    console.log("FINAL SERIALS:", serials_to_assign);
+
+    row.serial_no = serials_to_assign.join("\n");
+    row.has_serial_no = true;
+
+    frm.refresh_field("items");
+}
+
+function toggle_imei_field(frm, row) {
+    let grid = frm.fields_dict["items"].grid;
+
+    let must_enable_serial = row.custom_imei === "No";
+
+    grid.update_docfield_property(
+        "serial_no",
+        "read_only",
+        !must_enable_serial
+    );
+
+    row.has_serial_no = must_enable_serial;
+
+    frm.refresh_field("items");
 }

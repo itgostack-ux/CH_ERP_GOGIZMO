@@ -155,3 +155,52 @@ class CustomPurchaseReceipt(PurchaseReceipt):
     #     </table>
     #     """
     #     self.other_charges_calculation = html
+
+    def generate_auto_serials(self):
+        for item in self.items:
+
+            if getattr(item, "custom_imei", "No") != "No":
+                continue
+
+            if item.serial_no and item.serial_no.strip():
+                continue
+
+            prefix = (getattr(item, "serial_no_series", "") or item.item_code.upper()).split("#")[0]
+            prefix = prefix.replace(".", "")
+
+            serials = frappe.db.get_all(
+                "Serial No",
+                filters={"item_code": item.item_code},
+                fields=["name", "status"]
+            )
+
+            last_number = 0
+            reusable = []
+
+            for s in serials:
+                match = re.match(rf"^{re.escape(prefix)}(\d+)$", s.name)
+                if match:
+                    num = int(match.group(1))
+                    last_number = max(last_number, num)
+
+                    if s.status == "Delivered":
+                        reusable.append((s.name, num))
+
+            reusable.sort(key=lambda x: x[1])
+
+            final_serials = []
+            qty = int(item.qty)
+
+            for sn, num in reusable:
+                if len(final_serials) >= qty:
+                    break
+                final_serials.append(sn)
+
+            remaining = qty - len(final_serials)
+
+            for i in range(remaining):
+                last_number += 1
+                final_serials.append(f"{prefix}{str(last_number).zfill(5)}")
+
+            item.serial_no = "\n".join(final_serials)
+            
