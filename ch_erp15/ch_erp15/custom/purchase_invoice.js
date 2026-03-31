@@ -39,29 +39,40 @@ frappe.ui.form.on("Purchase Invoice", {
     }
 });
 
-// function apply_on_marginal(frm) {
-//     const is_m = frm.doc.custom_purchase_type === "Marginal";
-//     const style_id = "mt-hide-style";
-//     let css = "";
-
-//     if (!is_m) {
-//         css = `
-//         [data-fieldname="taxable_value"],
-//         [data-fieldname="custom_unit_taxable_value"],
-//         [data-fieldname="custom_exempted_value"] {
-//             display: none !important;
-//         }`;
-//     }
-
-//     let old = document.getElementById(style_id);
-//     if (old) old.remove();
-
-//     let style = document.createElement("style");
-//     style.id = style_id;
-//     style.innerHTML = css;
-//     document.head.appendChild(style);
-//     frm.refresh_field("items");
-// }
+function apply_on_marginal(frm) {
+    const is_m = frm.doc.custom_purchase_type === "Marginal";
+    const style_id = "mt-hide-style";
+    let css = "";
+ 
+    if (!is_m) {
+        css += `
+        /* Hide content but KEEP column width */
+        [data-fieldname="taxable_value"],
+        [data-fieldname="custom_unit_taxable_value"],
+        [data-fieldname="custom_exempted_value"] {
+            visibility: hidden !important;
+        }
+ 
+        /* Optional: remove input interaction */
+        [data-fieldname="taxable_value"] input,
+        [data-fieldname="custom_unit_taxable_value"] input,
+        [data-fieldname="custom_exempted_value"] input {
+            pointer-events: none;
+        }
+        `;
+    }
+ 
+    let old = document.getElementById(style_id);
+    if (old) old.remove();
+ 
+    let style = document.createElement("style");
+    style.id = style_id;
+    style.innerHTML = css;
+    document.head.appendChild(style);
+ 
+    frm.refresh_field("items");
+}
+ 
 // ===============================
 // ZERO TAX LOGIC (UNCHANGED)
 // ===============================
@@ -207,10 +218,10 @@ function apply_marginal_scheme(frm) {
 
     //--------------------------------------------------
     // TOTALS
-    //--------------------------------------------------
+    // --------------------------------------------------
 
-    frm.doc.net_total = total_margin_taxable;
-    frm.doc.base_net_total = total_margin_taxable;
+    // frm.doc.net_total = total_margin_taxable;
+    // frm.doc.base_net_total = total_margin_taxable;
 
     frm.doc.taxes_and_charges_added = total_gst;
     frm.doc.base_taxes_and_charges_added = total_gst;
@@ -225,19 +236,5 @@ function apply_marginal_scheme(frm) {
     frm.doc.rounded_total = Math.round(custom_grand_total);
     frm.doc.outstanding_amount = custom_grand_total;
 
-    frm.refresh_fields([
-        "net_total",
-        "taxes_and_charges_added",
-        "grand_total",
-        "rounded_total"
-    ]);
-    
-    // frappe.call({
-    //     method: "ch_erp15.ch_erp15.custom.purchase_invoice.apply_marginal_backend",
-    //     args: {
-    //         doc: frm.doc
-    //     },
-    //     freeze: false
-    // });
-
+    frm.refresh_fields();
 }

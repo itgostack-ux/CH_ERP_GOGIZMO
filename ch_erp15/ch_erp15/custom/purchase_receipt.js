@@ -64,29 +64,40 @@ frappe.ui.form.on("Purchase Receipt", {
     }
 
 });
-// function apply_on_marginal(frm) {
-//     const is_m = frm.doc.custom_purchase_type === "Marginal";
-//     const style_id = "mt-hide-style";
-//     let css = "";
-
-//     if (!is_m) {
-//         css = `
-//         [data-fieldname="taxable_value"],
-//         [data-fieldname="custom_unit_taxable_value"],
-//         [data-fieldname="custom_exempted_value"] {
-//             display: none !important;
-//         }`;
-//     }
-
-//     let old = document.getElementById(style_id);
-//     if (old) old.remove();
-
-//     let style = document.createElement("style");
-//     style.id = style_id;
-//     style.innerHTML = css;
-//     document.head.appendChild(style);
-//     frm.refresh_field("items");
-// }
+function apply_on_marginal(frm) {
+    const is_m = frm.doc.custom_purchase_type === "Marginal";
+    const style_id = "mt-hide-style";
+    let css = "";
+ 
+    if (!is_m) {
+        css += `
+        /* Hide content but KEEP column width */
+        [data-fieldname="taxable_value"],
+        [data-fieldname="custom_unit_taxable_value"],
+        [data-fieldname="custom_exempted_value"] {
+            visibility: hidden !important;
+        }
+ 
+        /* Optional: remove input interaction */
+        [data-fieldname="taxable_value"] input,
+        [data-fieldname="custom_unit_taxable_value"] input,
+        [data-fieldname="custom_exempted_value"] input {
+            pointer-events: none;
+        }
+        `;
+    }
+ 
+    let old = document.getElementById(style_id);
+    if (old) old.remove();
+ 
+    let style = document.createElement("style");
+    style.id = style_id;
+    style.innerHTML = css;
+    document.head.appendChild(style);
+ 
+    frm.refresh_field("items");
+}
+ 
 
 // ===============================
 // CHILD TABLE EVENTS
