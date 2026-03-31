@@ -182,11 +182,11 @@ def _filter_ready_fields(fields_dict):
 
 def after_install():
     _ensure_module_def()
-    create_custom_fields(_filter_ready_fields(CUSTOM_FIELDS), update=True)
+    create_custom_fields(_filter_ready_fields(CUSTOM_FIELDS), update=False)
 
 
 def after_migrate():
-    create_custom_fields(_filter_ready_fields(CUSTOM_FIELDS), update=True)
+    create_custom_fields(_filter_ready_fields(CUSTOM_FIELDS), update=False)
 
 
 def before_uninstall():
