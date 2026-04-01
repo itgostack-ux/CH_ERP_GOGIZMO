@@ -96,23 +96,81 @@ frappe.ui.form.on("Purchase Taxes and Charges", {
 // ⭐ ZERO TAX (UNREGISTERED)
 // =====================================================
 
+
+
+
 function apply_zero_tax(frm) {
 
-    (frm.doc.taxes || []).forEach(row => {
-        row.rate = 0;
-        row.tax_amount = 0;
-        row.base_tax_amount = 0;
-        row.total = 0;
-        row.base_total = 0;
+    if (frm.doc.custom_purchase_type !== "Unregistered") return;
+
+    let total_amount = 0;
+
+    //--------------------------------------------------
+    // ITEMS TOTAL
+    //--------------------------------------------------
+    (frm.doc.items || []).forEach(item => {
+
+        let qty = flt(item.qty);
+        let rate = flt(item.rate);
+
+        let amount = qty * rate;
+
+        item.amount = amount;
+        item.base_amount = amount;
+
+        total_amount += amount;
     });
 
-    frm.doc.net_total = 0;
-    frm.doc.taxes_and_charges_added = 0;
-    frm.doc.grand_total = 0;
-    frm.doc.rounded_total = 0;
+    //--------------------------------------------------
+    // ZERO TAX
+    //--------------------------------------------------
+    (frm.doc.taxes || []).forEach(row => {
 
-    frm.refresh_fields(["taxes", "net_total", "grand_total"]);
-} 
+        // row.rate = 0;
+
+        row.tax_amount = 0;
+        row.base_tax_amount = 0;
+
+        row.total = total_amount;
+        row.base_total = total_amount;
+    });
+
+    //--------------------------------------------------
+    // TOTALS (IMPORTANT)
+    //--------------------------------------------------
+    frm.doc.net_total = total_amount;
+    frm.doc.base_net_total = total_amount;
+
+    frm.doc.total = total_amount;
+    frm.doc.base_total = total_amount;
+
+    frm.doc.total_taxes_and_charges = 0;
+    frm.doc.base_total_taxes_and_charges = 0;
+
+    frm.doc.taxes_and_charges_added = 0;
+    frm.doc.base_taxes_and_charges_added = 0;
+
+    frm.doc.grand_total = total_amount;
+    frm.doc.base_grand_total = total_amount;
+
+    frm.doc.rounded_total = Math.round(total_amount);
+    frm.doc.base_rounded_total = Math.round(total_amount);
+
+    //--------------------------------------------------
+    // REFRESH
+    //--------------------------------------------------
+    frm.refresh_fields([
+        "items",
+        "taxes",
+        "net_total",
+        "grand_total",
+        "rounded_total"
+    ]);
+}
+
+
+
+
 
 
 // =====================================================

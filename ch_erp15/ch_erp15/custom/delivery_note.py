@@ -72,6 +72,13 @@ def get_exempted_value_from_serial(serial):
 
 
 
+
+
+
+
+
+
+
 def full_recalculation(doc, method=None):
 
     total_taxable = 0
@@ -95,10 +102,18 @@ def full_recalculation(doc, method=None):
         rate = flt(item.rate)
         qty = flt(item.qty)
 
-        total_value = rate * qty
-        taxable_total = max(total_value - total_exempt, 0)
+        # ✅ NEW LOGIC (ONLY CHANGE)
+        exempt_per_unit = (total_exempt / qty) if qty else 0
 
-        item.taxable_value = (taxable_total / qty) if qty else 0
+        base_value = rate - exempt_per_unit
+        if base_value < 0:
+            base_value = 0
+
+        taxable_per_unit = base_value / 1.18
+
+        item.taxable_value = taxable_per_unit
+
+        taxable_total = taxable_per_unit * qty
 
         if has_field("Delivery Note Item", "custom_total_taxable_value"):
             item.custom_total_taxable_value = taxable_total
@@ -119,10 +134,13 @@ def full_recalculation(doc, method=None):
     doc.total_taxes_and_charges = tax_amount
     doc.base_total_taxes_and_charges = tax_amount
 
-    # ✅ Important: prevent overwrite loop issues
     doc.flags.ignore_validate_update_after_submit = True
 
     doc.calculate_taxes_and_totals()
+
+
+
+
 
 
 

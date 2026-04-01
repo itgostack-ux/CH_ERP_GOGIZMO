@@ -1,24 +1,17 @@
 // =====================================================
 // ⭐ DELIVERY NOTE — FINAL TAX LOGIC
-// item.taxable_value × 0.18 = tax.tax_amount
+// (rate - exempted) / 1.18 → taxable
+// taxable × 0.18 → tax
 // =====================================================
 
 let scan_in_progress = false;
 
 
 // =====================================================
-// ⭐ DELIVERY NOTE EVENTS (ONLY ONE BLOCK)
+// ⭐ DELIVERY NOTE EVENTS
 // =====================================================
 
 frappe.ui.form.on("Delivery Note", {
-
-    // onload(frm) {
-    //     update_document_tax_amount(frm);
-    // },
-
-    // refresh(frm) {
-    //     update_document_tax_amount(frm);
-    // },
 
     custom_scan_imei__serial_no(frm) {
 
@@ -96,8 +89,9 @@ function process_serial_scan(frm, serial) {
 
                 callback: function(r) {
 
-                    const value = r.message || 0;
-                    const new_value = (row.custom_exempted_value || 0) + value;
+                    const value = flt(r.message || 0);
+
+                    const new_value = flt(row.custom_exempted_value) + value;
 
                     frappe.model.set_value(
                         row.doctype,
@@ -163,7 +157,7 @@ function recalc_row(frm, cdt, cdn) {
 
 
 // =====================================================
-// ⭐ TAXABLE VALUE PER ITEM
+// ⭐ TAXABLE VALUE PER ITEM (UPDATED LOGIC)
 // =====================================================
 
 function update_row_taxable_value(row) {
@@ -172,10 +166,18 @@ function update_row_taxable_value(row) {
     const exempt = flt(row.custom_exempted_value);
     const qty = flt(row.qty);
 
-    let taxable = rate - exempt;
-    if (taxable < 0) taxable = 0;
+    // STEP 1: base value
+    let base_value = rate - exempt;
+
+    if (base_value < 0) base_value = 0;
+
+    // STEP 2: REMOVE GST (18%)
+    let taxable = base_value / 1.18;
+
+    taxable = flt(taxable);
 
     frappe.model.set_value(row.doctype, row.name, "taxable_value", taxable);
+
     frappe.model.set_value(
         row.doctype,
         row.name,
@@ -186,7 +188,7 @@ function update_row_taxable_value(row) {
 
 
 // =====================================================
-// ⭐ FINAL TAX CALCULATION (USED EVERYWHERE)
+// ⭐ FINAL TAX CALCULATION
 // =====================================================
 
 function update_document_tax_amount(frm) {
@@ -199,13 +201,13 @@ function update_document_tax_amount(frm) {
         total_taxable += flt(row.taxable_value) * flt(row.qty);
     });
 
-    const tax_amount = total_taxable * 0.18;
+    const tax_amount = flt(total_taxable * 0.18);
 
     const tax_row = frm.doc.taxes[0];
     if (!tax_row) return;
 
 
-    // ⭐ IMPORTANT — FORCE MANUAL TAX
+    // FORCE MANUAL TAX
     frappe.model.set_value(
         tax_row.doctype,
         tax_row.name,
@@ -220,8 +222,7 @@ function update_document_tax_amount(frm) {
         tax_amount
     );
 
-
-    // FORCE TOTAL RECALC
+    // ERPNext recalc
     frm.trigger("calculate_taxes_and_totals");
 
     frm.refresh_field("taxes");
