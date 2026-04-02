@@ -267,8 +267,8 @@ function apply_marginal_scheme(frm) {
     // TOTALS
     // --------------------------------------------------
 
-    // frm.doc.net_total = total_margin_taxable;
-    // frm.doc.base_net_total = total_margin_taxable;
+    frm.doc.net_total = total_margin_taxable;
+    frm.doc.base_net_total = total_margin_taxable;
 
     frm.doc.taxes_and_charges_added = total_gst;
     frm.doc.base_taxes_and_charges_added = total_gst;
