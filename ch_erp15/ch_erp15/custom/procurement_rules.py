@@ -161,6 +161,15 @@ def _validate_purchase_receipt_imeis(doc):
         imei_number = cstr(row.get("imei_number")).strip()
         if not imei_number:
             frappe.throw(_("All IMEI tracking rows must include an IMEI number."))
+
+        # ERP-10 fix: Validate IMEI format (numeric, 15 digits per GSMA standard)
+        if not imei_number.isdigit() or len(imei_number) < 14 or len(imei_number) > 16:
+            frappe.throw(
+                _("Invalid IMEI format: {0}. IMEI must be 14-16 digits.").format(
+                    frappe.bold(imei_number)),
+                title=_("Invalid IMEI"),
+            )
+
         if imei_number in seen_imeis:
             frappe.throw(_("Duplicate IMEI number found: {0}").format(frappe.bold(imei_number)))
 
@@ -174,6 +183,45 @@ def _validate_purchase_receipt_imeis(doc):
 
         seen_imeis.add(imei_number)
         row_counts[purchase_receipt_item] += 1
+
+    # ERP-1 fix: Check IMEI uniqueness across ALL existing Purchase Receipts
+    if seen_imeis:
+        existing_imeis = frappe.db.sql(
+            """SELECT imei_number, parent
+               FROM `tabIMEI Track`
+               WHERE imei_number IN %(imeis)s
+                 AND parent != %(current)s
+                 AND parenttype = 'Purchase Receipt'
+                 AND EXISTS (
+                     SELECT 1 FROM `tabPurchase Receipt` pr
+                     WHERE pr.name = `tabIMEI Track`.parent
+                       AND pr.docstatus = 1
+                 )
+            """,
+            {"imeis": list(seen_imeis), "current": doc.name or ""},
+            as_dict=True,
+        )
+        if existing_imeis:
+            dupes = ", ".join(
+                f"{frappe.bold(e.imei_number)} (in {e.parent})" for e in existing_imeis[:5]
+            )
+            frappe.throw(
+                _("The following IMEI(s) already exist in other Purchase Receipts: {0}").format(dupes),
+                title=_("Duplicate IMEI Across Receipts"),
+            )
+
+        # Also check against Serial No master
+        existing_serials = frappe.get_all(
+            "Serial No",
+            filters={"name": ("in", list(seen_imeis))},
+            pluck="name",
+        )
+        if existing_serials:
+            dupes = ", ".join(frappe.bold(s) for s in existing_serials[:5])
+            frappe.throw(
+                _("The following IMEI(s) already exist as Serial Numbers: {0}").format(dupes),
+                title=_("Duplicate IMEI — Serial Already Exists"),
+            )
 
     for item_name, meta in tracked_rows.items():
         if row_counts.get(item_name, 0) != meta["qty"]:

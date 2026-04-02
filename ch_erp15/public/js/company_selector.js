@@ -1,5 +1,3 @@
-console.log("✅ Company selector loaded");
-
 const SESSION_KEY = "__company_dialog_done__";
 
 // Trigger after route change

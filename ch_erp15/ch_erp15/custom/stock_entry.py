@@ -327,9 +327,12 @@ def transit_target_entry(doc):
         if final_qty > 0:
             move_stock(doc,item,final_qty,_get_transit_warehouse(doc.company),item.t_warehouse)
 
-# def transit_source(doc):
-#     for item in doc.items:
-#         move_stock(doc,item,item.custom_pending_qty,TRANSIT_WAREHOUSE,item.s_warehouse)
+# ERP-2 fix: Uncommented transit_source function
+def transit_source(doc):
+    for item in doc.items:
+        if not item.custom_pending_qty:
+            continue
+        move_stock(doc, item, item.custom_pending_qty, _get_transit_warehouse(doc.company), item.s_warehouse)
 
 
 # ─── Logistics Flow APIs ────────────────────────────────────────────────────

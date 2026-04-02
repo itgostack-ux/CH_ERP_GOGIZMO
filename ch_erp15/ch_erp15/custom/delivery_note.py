@@ -109,7 +109,9 @@ def full_recalculation(doc, method=None):
         if base_value < 0:
             base_value = 0
 
-        taxable_per_unit = base_value / 1.18
+        # ERP-3 fix: Dynamic GST rate lookup instead of hardcoded 18%
+        gst_rate = _get_item_gst_rate(item.item_code, doc) or 18
+        taxable_per_unit = base_value / (1 + gst_rate / 100)
 
         item.taxable_value = taxable_per_unit
 
@@ -125,7 +127,9 @@ def full_recalculation(doc, method=None):
 
     tax_row = doc.taxes[0]
 
-    tax_amount = total_taxable * 0.18
+    # Use the effective GST rate (from taxes table or default 18%)
+    effective_gst_rate = _get_doc_gst_rate(doc) or 18
+    tax_amount = total_taxable * (effective_gst_rate / 100)
 
     tax_row.charge_type = "Actual"
     tax_row.tax_amount = tax_amount
@@ -139,6 +143,32 @@ def full_recalculation(doc, method=None):
     doc.calculate_taxes_and_totals()
 
 
+def _get_item_gst_rate(item_code, doc):
+    """Get GST rate for an item from its Item Tax Template or the doc's tax template."""
+    from frappe.utils import flt as _flt
+    # Try item-level tax template first
+    item_tax_template = frappe.db.get_value("Item", item_code, "item_tax_template") if item_code else None
+    if item_tax_template:
+        rates = frappe.get_all(
+            "Item Tax Template Detail",
+            filters={"parent": item_tax_template},
+            fields=["tax_rate"],
+        )
+        if rates:
+            return sum(_flt(r.tax_rate) for r in rates)
+
+    # Fall back to the first tax row rate on the document
+    return _get_doc_gst_rate(doc)
+
+
+def _get_doc_gst_rate(doc):
+    """Get GST rate from the document's tax rows or the sales taxes template."""
+    from frappe.utils import flt as _flt
+    for tax in (doc.get("taxes") or []):
+        if _flt(tax.get("rate")) > 0:
+            return _flt(tax.rate)
+    # Default
+    return 18
 
 
 

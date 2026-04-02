@@ -673,8 +673,6 @@ async function generate_auto_serial(frm, row) {
         );
     }
  
-    console.log("FINAL SERIALS:", serials_to_assign);
- 
     row.serial_no = serials_to_assign.join("\n");
     row.has_serial_no = true;
  
