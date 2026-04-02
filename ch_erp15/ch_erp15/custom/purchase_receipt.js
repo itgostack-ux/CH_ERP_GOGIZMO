@@ -5,7 +5,17 @@ frappe.ui.form.on("Purchase Receipt", {
         apply_zero_tax(frm);
         apply_marginal_scheme(frm);
         apply_taxable_scheme(frm);
- 
+
+        // Barcode sticker printing buttons (only after submit)
+        if (frm.doc.docstatus === 1) {
+            frm.add_custom_button(__("Print All Barcode Stickers"), () => {
+                _print_barcode_stickers(frm);
+            }, __("Barcode"));
+
+            frm.add_custom_button(__("Print Specific Barcodes"), () => {
+                _print_specific_barcodes(frm);
+            }, __("Barcode"));
+        }
     },
  
     onload(frm) {
@@ -685,4 +695,137 @@ function toggle_imei_field(frm, row) {
     row.has_serial_no = must_enable_serial;
  
     frm.refresh_field("items");
+}
+
+// ── Barcode Sticker Printing ─────────────────────────────────────
+function _print_barcode_stickers(frm) {
+    // Collect all serial numbers from the Purchase Receipt
+    const serials = [];
+    (frm.doc.items || []).forEach((item) => {
+        const sn_list = (item.serial_no || "").split("\n").map(s => s.trim()).filter(Boolean);
+        sn_list.forEach((sn) => {
+            serials.push({ serial_no: sn, item_code: item.item_code, item_name: item.item_name });
+        });
+    });
+    if (!serials.length) {
+        frappe.msgprint(__("No serial numbers found in this Purchase Receipt."));
+        return;
+    }
+    _open_barcode_print_window(serials, frm.doc.name);
+}
+
+function _print_specific_barcodes(frm) {
+    // Let user select specific serial numbers to reprint
+    const all_serials = [];
+    (frm.doc.items || []).forEach((item) => {
+        const sn_list = (item.serial_no || "").split("\n").map(s => s.trim()).filter(Boolean);
+        sn_list.forEach((sn) => {
+            all_serials.push({ serial_no: sn, item_code: item.item_code, item_name: item.item_name });
+        });
+    });
+    if (!all_serials.length) {
+        frappe.msgprint(__("No serial numbers found."));
+        return;
+    }
+
+    const fields = all_serials.map((s, i) => ({
+        fieldname: `sn_${i}`,
+        fieldtype: "Check",
+        label: `${s.serial_no} — ${s.item_name}`,
+        default: 0,
+    }));
+
+    const d = new frappe.ui.Dialog({
+        title: __("Select Barcodes to Print"),
+        fields: fields,
+        size: "large",
+        primary_action_label: __("Print Selected"),
+        primary_action: (values) => {
+            const selected = [];
+            all_serials.forEach((s, i) => {
+                if (values[`sn_${i}`]) selected.push(s);
+            });
+            if (!selected.length) {
+                frappe.msgprint(__("No barcodes selected."));
+                return;
+            }
+            d.hide();
+            _open_barcode_print_window(selected, frm.doc.name);
+        },
+    });
+    d.show();
+}
+
+function _open_barcode_print_window(serials, receipt_name) {
+    // Generate barcode sticker HTML and open in a new print window
+    const stickers = serials.map((s) => `
+        <div class="barcode-sticker">
+            <div class="sticker-item-name">${frappe.utils.escape_html(s.item_name)}</div>
+            <div class="sticker-item-code">${frappe.utils.escape_html(s.item_code)}</div>
+            <svg class="barcode-svg" data-serial="${frappe.utils.escape_html(s.serial_no)}"></svg>
+            <div class="sticker-serial">${frappe.utils.escape_html(s.serial_no)}</div>
+        </div>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Barcode Stickers — ${frappe.utils.escape_html(receipt_name)}</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+        .barcode-container {
+            display: flex; flex-wrap: wrap; gap: 4mm;
+            padding: 4mm; justify-content: flex-start;
+        }
+        .barcode-sticker {
+            width: 50mm; height: 30mm; border: 0.5px solid #ccc;
+            padding: 2mm; text-align: center; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            page-break-inside: avoid;
+        }
+        .sticker-item-name {
+            font-size: 7pt; font-weight: bold;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+            max-width: 46mm;
+        }
+        .sticker-item-code { font-size: 6pt; color: #666; margin-bottom: 1mm; }
+        .barcode-svg { max-width: 44mm; height: 14mm; }
+        .sticker-serial { font-size: 7pt; font-weight: 600; margin-top: 0.5mm; }
+        @media print {
+            body { margin: 0; }
+            .barcode-sticker { border: 0.5px solid #ddd; }
+            .no-print { display: none; }
+            @page { margin: 5mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="padding:10px;text-align:center;">
+        <button onclick="window.print()" style="padding:8px 24px;font-size:14px;cursor:pointer;">
+            🖨️ Print Stickers
+        </button>
+        <span style="margin-left:12px;color:#666;">${serials.length} sticker(s)</span>
+    </div>
+    <div class="barcode-container">${stickers}</div>
+    <script>
+        document.querySelectorAll(".barcode-svg").forEach(function(svg) {
+            var serial = svg.getAttribute("data-serial");
+            try {
+                JsBarcode(svg, serial, {
+                    format: "CODE128", width: 1.5, height: 40,
+                    displayValue: false, margin: 0
+                });
+            } catch(e) {
+                svg.parentNode.querySelector(".sticker-serial").style.color = "red";
+            }
+        });
+    <\/script>
+</body>
+</html>`;
+
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
 }
