@@ -612,6 +612,42 @@ function open_imei_dialog(frm, row) {
  
         scanner_input.val("");
     });
+
+    // ERP-12 fix: Bulk paste support — paste multiple IMEIs separated by newlines, tabs, or commas
+    scanner_input.on("paste", function (e) {
+        e.preventDefault();
+        let paste_data = (e.originalEvent.clipboardData || window.clipboardData).getData("text");
+        if (!paste_data) return;
+
+        // Split by newlines, tabs, commas, or semicolons
+        let imeis = paste_data.split(/[\n\r\t,;]+/).map(s => s.trim()).filter(s => s);
+        if (!imeis.length) return;
+
+        let imei_table = dialog.fields_dict.imei_table.grid.get_data();
+        let filled = 0, skipped = 0, duplicates = 0;
+
+        for (let val of imeis) {
+            if (imei_table.some(d => d.imei_no === val)) {
+                duplicates++;
+                continue;
+            }
+            let empty_row = imei_table.find(d => !d.imei_no);
+            if (!empty_row) {
+                skipped++;
+                continue;
+            }
+            empty_row.imei_no = val;
+            filled++;
+        }
+
+        dialog.fields_dict.imei_table.grid.refresh();
+        scanner_input.val("");
+
+        let msg_parts = [`${filled} IMEI(s) pasted`];
+        if (duplicates) msg_parts.push(`${duplicates} duplicate(s) skipped`);
+        if (skipped) msg_parts.push(`${skipped} skipped (no empty slots)`);
+        frappe.show_alert({ message: msg_parts.join(", "), indicator: filled ? "green" : "orange" });
+    });
 }
  
 async function generate_auto_serial(frm, row) {
@@ -769,7 +805,7 @@ function _open_barcode_print_window(serials, receipt_name) {
 <html>
 <head>
     <title>Barcode Stickers — ${frappe.utils.escape_html(receipt_name)}</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+    <script src="/assets/ch_erp15/js/JsBarcode.all.min.js"><\/script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; }

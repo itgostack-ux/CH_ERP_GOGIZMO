@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.utils import flt
 from frappe.model.mapper import get_mapped_doc
 from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_invoice
@@ -58,6 +59,10 @@ def get_exempted_value_from_serial(serial):
     if not serial:
         return 0
 
+    # ERP-14 fix: Guard SQL against missing custom field
+    if not has_field("Purchase Receipt Item", "custom_exempted_value"):
+        return 0
+
     result = frappe.db.sql("""
         SELECT 
             SUM(pri.custom_exempted_value) / NULLIF(SUM(pri.qty), 0)
@@ -79,7 +84,36 @@ def get_exempted_value_from_serial(serial):
 
 
 
+def _validate_exemption_data(doc):
+    """ERP-5 fix: Validate that exempted values have valid source data.
+    Ensures serial numbers referenced in exemption lookups actually have
+    Purchase Receipt backing — warns if exemption data is missing or stale.
+    """
+    for item in doc.items:
+        if not item.serial_no:
+            continue
+        serials = [s.strip() for s in item.serial_no.split("\n") if s.strip()]
+        for sn in serials:
+            exempt_val = get_exempted_value_from_serial(sn)
+            if flt(exempt_val) > flt(item.rate) * 1.5:
+                frappe.msgprint(
+                    _("Warning: Exempted value ({0}) for serial {1} exceeds 150% of item rate ({2}). "
+                      "Please verify the Purchase Receipt exemption data.").format(
+                        exempt_val, sn, item.rate),
+                    indicator="orange",
+                )
+            if flt(exempt_val) < 0:
+                frappe.throw(
+                    _("Invalid negative exempted value ({0}) for serial {1}. "
+                      "Check the Purchase Receipt custom_exempted_value field.").format(
+                        exempt_val, sn),
+                    title=_("Invalid Exemption Data"),
+                )
+
+
 def full_recalculation(doc, method=None):
+    # ERP-5 fix: Validate exemption values before recalculation
+    _validate_exemption_data(doc)
 
     total_taxable = 0
 

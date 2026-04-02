@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
 from erpnext.stock.stock_ledger import make_sl_entries
 from frappe.utils import get_datetime, now_datetime, flt
@@ -65,12 +66,32 @@ class CustomStockEntry(StockEntry):
         self.total_amount = total_outgoing
         self.base_total = total_outgoing
         self.grand_total = total_outgoing
+
+# ERP-13 fix: Transit approval roles — only these roles can advance transit status
+TRANSIT_APPROVAL_ROLES = {"Stock Manager", "Store Manager", "System Manager", "Administrator"}
+TRANSIT_APPROVAL_STATUSES = {"Transferred", "Receive At Transit"}
+
+
+def _check_transit_approval(status):
+    """ERP-13 fix: Check that user has approval role for critical transit status changes."""
+    if status not in TRANSIT_APPROVAL_STATUSES:
+        return  # Non-critical status changes (Draft, Pending With Goods) don't need approval
+    user_roles = set(frappe.get_roles())
+    if not user_roles.intersection(TRANSIT_APPROVAL_ROLES):
+        frappe.throw(
+            _("Status change to '{0}' requires Stock Manager or Store Manager role.").format(status),
+            title=_("Insufficient Permissions"),
+            exc=frappe.PermissionError,
+        )
+
           
 @frappe.whitelist()
 def set_custom_status(StockEntry, status):
     doc = frappe.get_doc("Stock Entry", StockEntry)
     if doc.stock_entry_type != "Material Transfer":
         return
+    # ERP-13 fix: Require approval role for transit status transitions
+    _check_transit_approval(status)
     frappe.db.sql("SELECT name FROM `tabStock Entry` WHERE name=%s FOR UPDATE",doc.name)
     doc.custom_status = status
     doc.flags.ignore_validate_update_after_submit = True
@@ -212,20 +233,6 @@ def goods_to_pending(StockEntry):
             item.custom_final_received_qty= 0
     doc.save(ignore_permissions=True)
     return "Flow restarted"
-
-# @frappe.whitelist()
-# def force_closed(StockEntry):
-#     doc = frappe.get_doc("Stock Entry", StockEntry)
-#     if doc.stock_entry_type != "Material Transfer":
-#         return
-#     if doc.custom_status!= "Partially Transferred":
-#         frappe.throw("Not a partially transferred document")
-#     doc.db_set("docstatus", 0)       
-#     doc.custom_status = "Force Closed"
-#     transit_source(doc)
-#     doc.save()
-#     doc.submit()
-#     return "Stock Returned to Source Warehouse and Force Closed"
 
 def _get_transit_warehouse(company):
     abbr = frappe.get_cached_value("Company", company, "abbr")
