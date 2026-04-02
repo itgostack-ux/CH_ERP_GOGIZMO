@@ -813,7 +813,7 @@
    "name": "Stock Entry-custom_status",
    "no_copy": 0,
    "non_negative": 0,
-   "options": "\nDraft\nPending With Goods\nReceive At Transit\nPartially Transferred\nTransferred\nForce Closed",
+   "options": "\nDraft\nPending With Goods\nReady For Pickup\nIn Transit\nReceive At Transit\nPartially Transferred\nTransferred\nForce Closed",
    "owner": "Administrator",
    "permlevel": 0,
    "placeholder": null,
