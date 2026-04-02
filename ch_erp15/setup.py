@@ -170,6 +170,70 @@ CUSTOM_FIELDS = {
             "depends_on": "eval:doc.custom_damaged_qty > 0",
         },
     ],
+    # ── Logistics tracking on Stock Entry ──
+    "Stock Entry": [
+        {
+            "fieldname": "custom_logistics_section",
+            "fieldtype": "Section Break",
+            "label": "Logistics Tracking",
+            "insert_after": "custom_status",
+            "collapsible": 1,
+            "depends_on": "eval:doc.stock_entry_type=='Material Transfer'",
+        },
+        {
+            "fieldname": "custom_logistics_status",
+            "fieldtype": "Select",
+            "label": "Logistics Status",
+            "options": "\nPending Pickup\nPicked Up\nIn Transit\nDelivered\nRevert Requested\nReverted",
+            "insert_after": "custom_logistics_section",
+            "read_only": 1,
+        },
+        {
+            "fieldname": "custom_logistics_person",
+            "fieldtype": "Data",
+            "label": "Logistics Person",
+            "insert_after": "custom_logistics_status",
+            "read_only": 1,
+        },
+        {
+            "fieldname": "custom_logistics_col_break",
+            "fieldtype": "Column Break",
+            "insert_after": "custom_logistics_person",
+        },
+        {
+            "fieldname": "custom_pickup_datetime",
+            "fieldtype": "Datetime",
+            "label": "Picked Up At",
+            "insert_after": "custom_logistics_col_break",
+            "read_only": 1,
+        },
+        {
+            "fieldname": "custom_delivery_datetime",
+            "fieldtype": "Datetime",
+            "label": "Delivered At",
+            "insert_after": "custom_pickup_datetime",
+            "read_only": 1,
+        },
+        {
+            "fieldname": "custom_pickup_photo",
+            "fieldtype": "Attach Image",
+            "label": "Pickup Photo",
+            "insert_after": "custom_delivery_datetime",
+        },
+        {
+            "fieldname": "custom_delivery_photo",
+            "fieldtype": "Attach Image",
+            "label": "Delivery Photo",
+            "insert_after": "custom_pickup_photo",
+        },
+        {
+            "fieldname": "custom_revert_reason",
+            "fieldtype": "Small Text",
+            "label": "Revert Reason",
+            "insert_after": "custom_delivery_photo",
+            "depends_on": "eval:doc.custom_logistics_status=='Reverted' || doc.custom_logistics_status=='Revert Requested'",
+        },
+    ],
 }
 
 

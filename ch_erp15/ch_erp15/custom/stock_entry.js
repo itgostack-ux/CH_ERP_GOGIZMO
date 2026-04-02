@@ -79,7 +79,9 @@ function handle_buttons(frm) {
         const statusColors = {
             "Draft": "gray",
             "Pending With Goods": "orange",
-            "Dispatch": "blue",
+            "Ready For Pickup": "blue",
+            "In Transit": "blue",
+            "Ready For Receive": "yellow",
             "Receive At Transit": "yellow",
             "Partially Transferred": "purple",
             "Transferred": "green",
@@ -90,6 +92,24 @@ function handle_buttons(frm) {
             frm.doc.custom_status,
             statusColors[frm.doc.custom_status] || "gray"
         );
+
+        // Logistics status badge
+        if (frm.doc.custom_logistics_status) {
+            const lColors = {
+                "Pending Pickup": "orange",
+                "Picked Up": "blue",
+                "In Transit": "blue",
+                "Delivered": "green",
+                "Revert Requested": "red",
+                "Reverted": "darkgray",
+            };
+            frm.dashboard.set_headline(
+                `<span class="indicator-pill ${lColors[frm.doc.custom_logistics_status] || 'gray'}">
+                    <i class="fa fa-truck"></i> Logistics: ${frm.doc.custom_logistics_status}
+                </span>
+                ${frm.doc.custom_logistics_person ? ' &middot; ' + frm.doc.custom_logistics_person : ''}`
+            );
+        }
     }
     if (frm.doc.docstatus === 0) {
         frm.page.clear_primary_action();
@@ -109,7 +129,7 @@ function handle_buttons(frm) {
     }
 
     if (frm.doc.custom_status === "Pending With Goods") {
-        frm.add_custom_button("Scan & Receive", () => {
+        frm.add_custom_button("Scan & Send", () => {
             let barcode = prompt("Scan or Enter Barcode:");
             if (barcode) {
                 frappe.call({
@@ -122,12 +142,12 @@ function handle_buttons(frm) {
                 });
             }
         }).addClass("btn-success");
-        frm.add_custom_button("Received At Transit", () => {
+        frm.add_custom_button("Ready For Pickup", () => {
             frappe.call({
                 method: "ch_erp15.ch_erp15.custom.stock_entry.set_custom_status",
                 args: {
                     StockEntry: frm.doc.name,
-                    status: "Receive At Transit"
+                    status: "Ready For Pickup"
                 },
                 callback: () => frm.reload_doc()
             });
@@ -147,30 +167,114 @@ function handle_buttons(frm) {
         }).addClass("btn-danger");
     }
 
-    if (frm.doc.custom_status === "Receive At Transit") {
+    // Logistics: Ready For Pickup → logistics can pick up
+    if (frm.doc.custom_status === "Ready For Pickup" && !frm.doc.custom_logistics_status) {
+        frm.add_custom_button("Logistics Pickup", () => {
+            let d = new frappe.ui.Dialog({
+                title: __("Logistics Pickup"),
+                fields: [
+                    {fieldname: "logistics_person", fieldtype: "Data", label: "Logistics Person", reqd: 1},
+                    {fieldname: "pickup_photo", fieldtype: "Attach Image", label: "Pickup Photo"},
+                ],
+                primary_action_label: __("Confirm Pickup"),
+                primary_action: (values) => {
+                    d.hide();
+                    frappe.call({
+                        method: "ch_erp15.ch_erp15.custom.stock_entry.logistics_pickup",
+                        args: {
+                            stock_entry: frm.doc.name,
+                            logistics_person: values.logistics_person,
+                            pickup_photo: values.pickup_photo,
+                        },
+                        callback: () => frm.reload_doc()
+                    });
+                }
+            });
+            d.show();
+        }).addClass("btn-primary");
+    }
 
-        frm.add_custom_button("Scan & Transfer", () => {
-            let barcode = prompt("Scan or Enter Barcode:");
-            if (barcode) {
+    // Logistics: In Transit → can deliver
+    if (frm.doc.custom_logistics_status === "In Transit") {
+        frm.add_custom_button("Deliver to Store", () => {
+            let d = new frappe.ui.Dialog({
+                title: __("Deliver to Store"),
+                fields: [
+                    {fieldname: "delivery_photo", fieldtype: "Attach Image", label: "Delivery Photo"},
+                ],
+                primary_action_label: __("Confirm Delivery"),
+                primary_action: (values) => {
+                    d.hide();
+                    frappe.call({
+                        method: "ch_erp15.ch_erp15.custom.stock_entry.logistics_deliver",
+                        args: {
+                            stock_entry: frm.doc.name,
+                            delivery_photo: values.delivery_photo,
+                        },
+                        callback: () => frm.reload_doc()
+                    });
+                }
+            });
+            d.show();
+        }).addClass("btn-success");
+
+        // Revert request while in transit
+        frm.add_custom_button("Request Revert", () => {
+            let reason = prompt("Reason for revert:");
+            if (reason) {
                 frappe.call({
-                    method: "ch_erp15.ch_erp15.custom.stock_entry.final_received",
-                    args: {
-                        StockEntry: frm.doc.name,
-                        barcode
-                    },
+                    method: "ch_erp15.ch_erp15.custom.stock_entry.logistics_revert_request",
+                    args: { stock_entry: frm.doc.name, reason },
                     callback: () => frm.reload_doc()
                 });
             }
-        }).addClass("btn-success");
-        frm.add_custom_button("Final Received", () => {
+        }).addClass("btn-danger");
+    }
+
+    // Revert requested → complete revert
+    if (frm.doc.custom_logistics_status === "Revert Requested") {
+        frm.add_custom_button("Complete Revert", () => {
             frappe.call({
-                method: "ch_erp15.ch_erp15.custom.stock_entry.transfer_custom_status",
-                args: {
-                    StockEntry: frm.doc.name
-                },
-                callback: () => frm.reload_doc()
+                method: "ch_erp15.ch_erp15.custom.stock_entry.logistics_revert_complete",
+                args: { stock_entry: frm.doc.name },
+                callback: () => {
+                    frappe.msgprint("Goods reverted to source warehouse");
+                    frm.reload_doc();
+                }
             });
-        }).addClass("btn-primary");
+        }).addClass("btn-danger");
+    }
+
+    if (frm.doc.custom_status === "Ready For Receive" || frm.doc.custom_status === "Receive At Transit") {
+        // Block receive if revert requested
+        if (frm.doc.custom_logistics_status === "Revert Requested") {
+            frm.dashboard.set_headline(
+                '<span class="indicator-pill red"><i class="fa fa-ban"></i> Revert Requested — receiving blocked</span>'
+            );
+        } else {
+            frm.add_custom_button("Scan & Receive", () => {
+                let barcode = prompt("Scan IMEI / Barcode:");
+                if (barcode) {
+                    frappe.call({
+                        method: "ch_erp15.ch_erp15.custom.stock_entry.pos_scan_receive",
+                        args: {
+                            stock_entry: frm.doc.name,
+                            barcode
+                        },
+                        callback: () => frm.reload_doc()
+                    });
+                }
+            }).addClass("btn-success");
+            frm.add_custom_button("Confirm Received", () => {
+                frappe.call({
+                    method: "ch_erp15.ch_erp15.custom.stock_entry.pos_confirm_receive",
+                    args: {
+                        stock_entry: frm.doc.name
+                    },
+                    callback: () => frm.reload_doc()
+                });
+            }).addClass("btn-primary");
+        }
     }
 
     if (frm.doc.custom_status === "Partially Transferred" && frm.doc.docstatus === 1) {
