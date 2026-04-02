@@ -35,6 +35,10 @@ doctype_js = {
     "Material Request": "ch_erp15/custom/material_request.js",
 }
 
+doctype_list_js = {
+    "Material Request": "ch_erp15/custom/material_request_list.js",
+}
+
 
 
 doc_events = {

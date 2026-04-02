@@ -76,6 +76,14 @@ CUSTOM_FIELDS = {
             "insert_after": "custom_source_material_request",
             "depends_on": "eval:doc.material_request_type=='Material Transfer'",
         },
+        {
+            "fieldname": "custom_request_datetime",
+            "fieldtype": "Datetime",
+            "label": "Request Date Time",
+            "insert_after": "custom_preferred_source_warehouse",
+            "read_only": 1,
+            "description": "When the stock request was first created from POS",
+        },
         # ── SLA fields ──
         {
             "fieldname": "custom_sla_section",

@@ -1,16 +1,43 @@
 frappe.ui.form.on("Material Request", {
     refresh(frm) {
-        // ── SLA / Priority indicators ────────────────────────────────────
-        if (frm.doc.custom_sla_breached) {
-            frm.dashboard.set_headline(
-                __('<span class="indicator-pill red">SLA Breached</span> Priority: {0}',
-                    [frm.doc.custom_priority])
-            );
-        } else if (frm.doc.custom_priority === "Urgent" && frm.doc.custom_store) {
-            frm.dashboard.set_headline(
-                __('<span class="indicator-pill orange">Urgent</span> Store: {0}',
-                    [frm.doc.custom_store])
-            );
+        // ── Combined status indicator ────────────────────────────────────
+        if (frm.doc.custom_store) {
+            let status_html = "";
+            if (frm.doc.docstatus === 0 && frm.doc.custom_approval_status === "Pending Approval") {
+                status_html = '<span class="indicator-pill orange">Pending Approval</span>';
+            } else if (frm.doc.docstatus === 0 && frm.doc.custom_approval_status === "Rejected") {
+                status_html = '<span class="indicator-pill red">Rejected</span>';
+            } else if (frm.doc.custom_sla_breached) {
+                status_html = '<span class="indicator-pill red">SLA Breached</span>';
+            } else if (frm.doc.custom_priority === "Urgent") {
+                status_html = '<span class="indicator-pill orange">Urgent</span>';
+            }
+            if (status_html) {
+                let parts = [status_html];
+                if (frm.doc.custom_store) parts.push("Store: " + frm.doc.custom_store);
+                if (frm.doc.custom_priority) parts.push("Priority: " + frm.doc.custom_priority);
+                frm.dashboard.set_headline(parts.join(" &nbsp;|&nbsp; "));
+            }
+
+            // ── Target warehouse info ─────────────────────────────────────
+            if (frm.doc.set_warehouse && frm.doc.material_request_type === "Material Transfer") {
+                frm.dashboard.add_comment(
+                    __("Target Warehouse (Store): <strong>{0}</strong>", [frm.doc.set_warehouse]),
+                    "blue", true
+                );
+            }
+            if (frm.doc.custom_preferred_source_warehouse) {
+                frm.dashboard.add_comment(
+                    __("Source Warehouse (Zone): <strong>{0}</strong>", [frm.doc.custom_preferred_source_warehouse]),
+                    "blue", true
+                );
+            }
+            if (frm.doc.custom_request_datetime) {
+                frm.dashboard.add_comment(
+                    __("Requested: {0}", [frappe.datetime.str_to_user(frm.doc.custom_request_datetime)]),
+                    "blue", true
+                );
+            }
         }
 
         // Show linked purchase requests in dashboard

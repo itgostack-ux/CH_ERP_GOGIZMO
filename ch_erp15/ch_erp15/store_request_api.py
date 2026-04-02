@@ -55,6 +55,19 @@ def _get_warehouse_from_profile(pos_profile):
     return frappe.db.get_value("POS Profile", pos_profile, "warehouse")
 
 
+def _get_zone_source_warehouse(store):
+    """Resolve the source warehouse from the store's zone.
+
+    Returns the zone's source_warehouse or None if zone is not set.
+    """
+    if not store:
+        return None
+    zone = frappe.db.get_value("CH Store", store, "zone")
+    if not zone:
+        return None
+    return frappe.db.get_value("CH Store Zone", zone, "source_warehouse")
+
+
 def _validate_store_permission(store):
     """Ensure current user is allowed to act on this store."""
     if frappe.session.user == "Administrator":
@@ -106,14 +119,21 @@ def _send_notification(recipients, subject, message, reference_doctype=None,
         frappe.log_error(frappe.get_traceback(), "Store MR Notification Error")
 
     try:
-        frappe.sendmail(
-            recipients=recipients,
-            subject=subject,
-            message=message,
-            reference_doctype=reference_doctype,
-            reference_name=reference_name,
-            now=True,
+        # Only attempt email if an outgoing email account is configured
+        default_outgoing = frappe.db.get_value(
+            "Email Account",
+            {"default_outgoing": 1, "enable_outgoing": 1},
+            "name",
         )
+        if default_outgoing:
+            frappe.sendmail(
+                recipients=recipients,
+                subject=subject,
+                message=message,
+                reference_doctype=reference_doctype,
+                reference_name=reference_name,
+                now=True,
+            )
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Store MR Email Error")
 
@@ -198,6 +218,10 @@ def create_store_material_request(pos_profile, items, priority="Standard",
 
     schedule_date = required_by_date or nowdate()
 
+    # Auto-resolve source warehouse from zone if not explicitly given
+    if not preferred_source_warehouse:
+        preferred_source_warehouse = _get_zone_source_warehouse(store)
+
     mr = frappe.new_doc("Material Request")
     mr.material_request_type = "Material Transfer"
     mr.company = profile.company
@@ -211,6 +235,7 @@ def create_store_material_request(pos_profile, items, priority="Standard",
     mr.custom_priority = priority or "Standard"
     mr.custom_request_notes = notes
     mr.custom_approval_status = "Pending Approval"
+    mr.custom_request_datetime = now_datetime()
     if preferred_source_warehouse:
         mr.custom_preferred_source_warehouse = preferred_source_warehouse
 
@@ -1073,3 +1098,224 @@ def notify_on_mr_update(doc, method=None):
             reference_doctype="Material Request",
             reference_name=doc.name,
         )
+
+
+# ─── Draft requests: list + append items ──────────────────────────────────────
+
+@frappe.whitelist()
+def get_draft_requests(pos_profile):
+    """Return Draft store MRs that the store exec can still append items to."""
+    frappe.has_permission("Material Request", "read", throw=True)
+    store = _get_store_from_profile(pos_profile)
+    if not store:
+        return []
+
+    drafts = frappe.get_all(
+        "Material Request",
+        filters={
+            "custom_store": store,
+            "docstatus": 0,
+            "custom_approval_status": "Pending Approval",
+        },
+        fields=[
+            "name", "custom_priority as priority",
+            "custom_request_notes as notes",
+            "schedule_date as required_by_date",
+            "custom_request_datetime as request_datetime",
+            "creation",
+        ],
+        order_by="creation desc",
+        limit=10,
+    )
+
+    if not drafts:
+        return drafts
+
+    # Enrich with items
+    names = [d["name"] for d in drafts]
+    items = frappe.db.sql(
+        """SELECT parent, item_code, item_name, qty, uom
+           FROM `tabMaterial Request Item`
+           WHERE parent IN %(names)s
+           ORDER BY idx""",
+        {"names": tuple(names)},
+        as_dict=True,
+    )
+    items_map = {}
+    for i in items:
+        items_map.setdefault(i.parent, []).append(i)
+
+    for d in drafts:
+        d["items"] = items_map.get(d["name"], [])
+        d["item_count"] = len(d["items"])
+
+    return drafts
+
+
+@frappe.whitelist()
+def add_items_to_draft(request_name, items):
+    """Add items to an existing Draft Material Request.
+
+    If an item already exists in the MR, its qty is incremented.
+    Otherwise a new row is appended.
+    """
+    frappe.has_permission("Material Request", "write", throw=True)
+    doc = frappe.get_doc("Material Request", request_name)
+
+    if doc.docstatus != 0:
+        frappe.throw(_("Can only add items to Draft requests."))
+    if doc.custom_approval_status not in ("Pending Approval", ""):
+        frappe.throw(_("This request has already been {0}.").format(
+            doc.custom_approval_status
+        ))
+
+    _validate_store_permission(doc.custom_store)
+    rows = _load_rows(items)
+    if not rows:
+        frappe.throw(_("At least one item is required."))
+
+    warehouse = doc.set_warehouse or (doc.items[0].warehouse if doc.items else None)
+    schedule_date = doc.schedule_date or nowdate()
+
+    for row in rows:
+        item_code = row.get("item_code")
+        qty = flt(row.get("qty") or row.get("requested_qty") or 0)
+        if not item_code or qty <= 0:
+            continue
+
+        # Check if item already exists — increment qty
+        existing = None
+        for mri in doc.items:
+            if mri.item_code == item_code:
+                existing = mri
+                break
+
+        if existing:
+            existing.qty = flt(existing.qty) + qty
+        else:
+            doc.append("items", {
+                "item_code": item_code,
+                "qty": qty,
+                "uom": row.get("uom") or frappe.db.get_value(
+                    "Item", item_code, "stock_uom"
+                ) or "Nos",
+                "warehouse": warehouse,
+                "schedule_date": schedule_date,
+            })
+
+    doc.save()
+
+    return {
+        "name": doc.name,
+        "item_count": len(doc.items),
+        "items": [
+            {"item_code": i.item_code, "item_name": i.item_name,
+             "qty": i.qty, "uom": i.uom}
+            for i in doc.items
+        ],
+    }
+
+
+# ─── Capacity / allowed-stock check for POS ──────────────────────────────────
+
+@frappe.whitelist()
+def check_request_capacity(pos_profile, items):
+    """Validate requested quantities against Warehouse Capacity rules.
+
+    Returns per-item capacity info: max_qty, current_qty, headroom,
+    and whether the requested qty would exceed capacity.
+    """
+    frappe.has_permission("Material Request", "read", throw=True)
+    rows = _load_rows(items)
+    if not rows:
+        return {}
+
+    warehouse = _get_warehouse_from_profile(pos_profile)
+    if not warehouse:
+        return {}
+
+    result = {}
+
+    for row in rows:
+        item_code = row.get("item_code")
+        requested_qty = flt(row.get("qty") or 0)
+        if not item_code:
+            continue
+
+        item_group = frappe.db.get_value("Item", item_code, "item_group")
+
+        # Fetch capacity rule (item-specific → item-group → catch-all)
+        capacity = frappe.db.sql(
+            """SELECT max_qty
+               FROM `tabWarehouse Capacity`
+               WHERE warehouse = %s
+                 AND (
+                     item = %s
+                     OR (item IS NULL AND item_group = %s)
+                     OR (item IS NULL AND item_group IS NULL)
+                 )
+               ORDER BY
+                   CASE
+                       WHEN item = %s THEN 1
+                       WHEN item_group = %s THEN 2
+                       ELSE 3
+                   END
+               LIMIT 1""",
+            (warehouse, item_code, item_group, item_code, item_group),
+            as_dict=True,
+        )
+
+        max_qty = flt(capacity[0].max_qty) if capacity else 0
+        current_qty = flt(frappe.db.get_value(
+            "Bin", {"warehouse": warehouse, "item_code": item_code}, "actual_qty"
+        ))
+
+        # Pending incoming from open MRs
+        pending_qty = flt(frappe.db.sql(
+            """SELECT SUM(mri.qty - IFNULL(mri.received_qty, 0))
+               FROM `tabMaterial Request Item` mri
+               JOIN `tabMaterial Request` mr ON mr.name = mri.parent
+               WHERE mr.docstatus = 1
+                 AND mr.status NOT IN ('Received','Transferred','Stopped','Cancelled')
+                 AND mri.item_code = %s AND mri.warehouse = %s""",
+            (item_code, warehouse),
+        )[0][0] or 0)
+
+        headroom = max(max_qty - current_qty - pending_qty, 0) if max_qty else 0
+
+        info = {
+            "item_code": item_code,
+            "max_qty": max_qty,
+            "current_qty": current_qty,
+            "pending_qty": pending_qty,
+            "headroom": headroom,
+            "requested_qty": requested_qty,
+            "has_capacity_rule": bool(capacity),
+        }
+
+        if max_qty and (current_qty + pending_qty + requested_qty) > max_qty:
+            info["exceeds"] = True
+            info["message"] = _(
+                "{0}: Requesting {1} would exceed capacity. "
+                "Max: {2}, Current stock: {3}, Pending: {4}, Headroom: {5}"
+            ).format(item_code, requested_qty, max_qty, current_qty,
+                     pending_qty, headroom)
+        else:
+            info["exceeds"] = False
+
+        result[item_code] = info
+
+    return result
+
+
+@frappe.whitelist()
+def get_zone_source_warehouse(pos_profile):
+    """Return the zone source warehouse for a POS Profile's store."""
+    store = _get_store_from_profile(pos_profile)
+    source_wh = _get_zone_source_warehouse(store)
+    zone = frappe.db.get_value("CH Store", store, "zone") if store else None
+    return {
+        "store": store,
+        "zone": zone,
+        "source_warehouse": source_wh,
+    }
