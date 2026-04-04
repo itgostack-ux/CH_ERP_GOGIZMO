@@ -4,7 +4,7 @@ app_publisher = "Admin"
 app_description = "Gogizmo ERP Customization Suite"
 app_email = "manonraj@gostack.in"
 app_license = "mit"
-required_apps = ["frappe/erpnext", "AbirJ1/ch_item_master"]
+required_apps = ["frappe/erpnext", "AbirJ1/ch_item_master", "gofix"]
 
 after_install = "ch_erp15.setup.after_install"
 after_migrate = "ch_erp15.setup.after_migrate"
