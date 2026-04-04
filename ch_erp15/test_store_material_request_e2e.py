@@ -96,13 +96,13 @@ def _cleanup_stale_mrs(store, item_code=None):
         filters["item"] = item_code
 
     stale = frappe.db.sql(
-        f"""SELECT mr.name, mr.docstatus
+        """SELECT mr.name, mr.docstatus
            FROM `tabMaterial Request` mr
            JOIN `tabMaterial Request Item` mri ON mri.parent = mr.name
            WHERE mr.custom_store = %(store)s
              AND mr.docstatus < 2
              AND mr.status NOT IN ('Stopped', 'Cancelled', 'Received', 'Transferred')
-             {item_filter}""",
+             {item_filter}""".format(item_filter=item_filter),  # noqa: UP032
         filters,
         as_dict=True,
     )

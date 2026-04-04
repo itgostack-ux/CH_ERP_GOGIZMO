@@ -10,10 +10,29 @@ Run with:
 import frappe
 from frappe.utils import flt
 
+_ALLOWED_TABLES = frozenset({
+	"tabBuyback Order Item", "tabBuyback Order Payment",
+	"tabBuyback Inspection Test Result", "tabBuyback Inspection",
+	"tabBuyback Order", "tabBuyback Assessment Diagnostic Test",
+	"tabBuyback Assessment", "tabCH OTP Log",
+	"tabPOS Opening Entry Detail", "tabPOS Opening Entry",
+	"tabPOS Closing Entry Detail", "tabPOS Closing Entry",
+	"tabSales Invoice Payment", "tabSales Invoice Item",
+	"tabSales Invoice", "tabPayment Entry Reference",
+	"tabPayment Entry", "tabGL Entry",
+	"tabDynamic Link", "tabCustomer Credit Limit",
+	"tabContact Phone", "tabContact Email",
+	"tabContact", "tabCustomer",
+	"tabSerial No", "tabItem", "tabItem Price",
+	"tabGrade Master", "tabMode of Payment", "tabPOS Profile",
+})
+
 
 def _del(table, label=None, where="1=1"):
+    if table not in _ALLOWED_TABLES:
+        raise ValueError(f"Table '{table}' not in allowed whitelist")
     try:
-        frappe.db.sql(f"DELETE FROM `{table}` WHERE {where}")
+        frappe.db.sql("DELETE FROM `{table}` WHERE {where}".format(table=table, where=where))  # noqa: UP032
         cnt = frappe.db.sql("SELECT ROW_COUNT()")[0][0]
         print(f"  OK  {label or table:<42} : {cnt} deleted")
     except Exception as e:
@@ -21,8 +40,10 @@ def _del(table, label=None, where="1=1"):
 
 
 def _count(table):
+    if table not in _ALLOWED_TABLES:
+        raise ValueError(f"Table '{table}' not in allowed whitelist")
     try:
-        return frappe.db.sql(f"SELECT COUNT(*) FROM `{table}`")[0][0]
+        return frappe.db.sql("SELECT COUNT(*) FROM `{table}`".format(table=table))[0][0]  # noqa: UP032
     except Exception:
         return "?"
 

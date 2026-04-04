@@ -180,8 +180,8 @@ def full_recalculation(doc, method=None):
 def _get_item_gst_rate(item_code, doc):
     """Get GST rate for an item from its Item Tax Template or the doc's tax template."""
     from frappe.utils import flt as _flt
-    # Try item-level tax template first
-    item_tax_template = frappe.db.get_value("Item", item_code, "item_tax_template") if item_code else None
+    # Try item-level tax template first (via Item Tax child table)
+    item_tax_template = frappe.db.get_value("Item Tax", {"parent": item_code}, "item_tax_template") if item_code else None
     if item_tax_template:
         rates = frappe.get_all(
             "Item Tax Template Detail",

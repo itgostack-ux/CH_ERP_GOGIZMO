@@ -64,7 +64,7 @@ def get_data(filters):
 
     where = " AND ".join(conditions)
 
-    data = frappe.db.sql(f"""
+    data = frappe.db.sql("""
         SELECT
             se.name,
             GROUP_CONCAT(DISTINCT sed.s_warehouse) AS from_warehouse,
@@ -93,7 +93,7 @@ def get_data(filters):
         GROUP BY se.name
         ORDER BY se.posting_date DESC, se.creation DESC
         LIMIT 500
-    """, params, as_dict=True)
+    """.format(where=where), params, as_dict=True)  # noqa: UP032
 
     now = now_datetime()
     for row in data:

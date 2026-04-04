@@ -21,7 +21,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import cint, flt, now_datetime, nowdate
+from frappe.utils import cint, flt, now_datetime, nowdate, get_datetime
 
 
 # ─── SLA configuration ───────────────────────────────────────────────────────
@@ -171,6 +171,7 @@ def _get_store_managers(store):
 @frappe.whitelist()
 def create_store_material_request(pos_profile, items, priority="Standard",
                                   notes=None, required_by_date=None,
+                                  required_by_datetime=None,
                                   preferred_source_warehouse=None):
     """Create a standard Material Request from a POS store.
 
@@ -236,6 +237,10 @@ def create_store_material_request(pos_profile, items, priority="Standard",
     mr.custom_request_notes = notes
     mr.custom_approval_status = "Pending Approval"
     mr.custom_request_datetime = now_datetime()
+    if required_by_datetime:
+        due_by = get_datetime(required_by_datetime)
+        mr.custom_sla_breach_date = due_by
+        mr.custom_sla_breached = 1 if due_by < now_datetime() else 0
     if preferred_source_warehouse:
         mr.custom_preferred_source_warehouse = preferred_source_warehouse
 
@@ -388,6 +393,7 @@ def get_store_material_requests(pos_profile, include_closed=0):
             "custom_approval_status as approval_status",
             "status", "schedule_date as required_by_date", "creation",
             "per_ordered", "per_received", "transfer_status",
+            "custom_sla_breach_date as sla_due_by",
             "custom_sla_breached as sla_breached",
             "material_request_type", "docstatus",
         ],
@@ -537,14 +543,16 @@ def check_stock_for_request(request_name):
 # ─── SLA tracking ─────────────────────────────────────────────────────────────
 
 def _set_sla(doc):
-    """Set SLA breach date based on priority after approval/submission."""
-    priority = doc.custom_priority or "Standard"
-    hours = SLA_HOURS.get(priority, 24)
-    breach_dt = now_datetime() + datetime.timedelta(hours=hours)
+    """Set or preserve the SLA breach datetime after approval/submission."""
+    breach_dt = get_datetime(doc.custom_sla_breach_date) if doc.custom_sla_breach_date else None
+    if not breach_dt:
+        priority = doc.custom_priority or "Standard"
+        hours = SLA_HOURS.get(priority, 24)
+        breach_dt = now_datetime() + datetime.timedelta(hours=hours)
 
     frappe.db.set_value("Material Request", doc.name, {
         "custom_sla_breach_date": breach_dt,
-        "custom_sla_breached": 0,
+        "custom_sla_breached": 1 if breach_dt < now_datetime() else 0,
     }, update_modified=False)
 
 

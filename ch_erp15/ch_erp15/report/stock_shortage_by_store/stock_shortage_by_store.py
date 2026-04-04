@@ -64,7 +64,7 @@ def get_data(filters):
              AND (mri.qty - IFNULL(mri.received_qty, 0)) > 0
              {company_filter}
              {store_filter}
-           ORDER BY mr.custom_store, mr.custom_priority DESC, mr.creation ASC""".format(
+           ORDER BY mr.custom_store, mr.custom_priority DESC, mr.creation ASC""".format(  # noqa: UP032
             company_filter="AND mr.company = %(company)s" if filters.get("company") else "",
             store_filter="AND mr.custom_store = %(store)s" if filters.get("store") else "",
         ),

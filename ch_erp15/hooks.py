@@ -10,6 +10,8 @@ after_install = "ch_erp15.setup.after_install"
 after_migrate = "ch_erp15.setup.after_migrate"
 before_uninstall = "ch_erp15.setup.before_uninstall"
 
+app_include_css = "/assets/ch_erp15/css/ops_hub.css"
+
 
 
 override_doctype_class = {
