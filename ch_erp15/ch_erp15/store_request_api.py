@@ -927,7 +927,7 @@ def raise_purchase_request(source_mr_name):
     source.add_comment(
         "Info",
         _("Purchase Request {0} raised for {1} shortage items").format(
-            f'<a href="/app/material-request/{mr.name}">{mr.name}</a>',
+            f'<a href="/desk/material-request/{mr.name}">{mr.name}</a>',
             len(purchase_items),
         ),
     )

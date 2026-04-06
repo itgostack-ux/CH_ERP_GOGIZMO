@@ -305,7 +305,7 @@ function execute_allocation(frm) {
                     if (!r.message || !r.message.created) return;
                     let created = r.message.created;
                     let links = created.map(
-                        (c) => `<a href="/app/stock-entry/${c.name}">${c.name}</a> (${c.source}, ${c.items} items)`
+                        (c) => `<a href="/desk/stock-entry/${c.name}">${c.name}</a> (${c.source}, ${c.items} items)`
                     ).join("<br>");
                     frappe.msgprint({
                         title: __("Stock Entries Created"),
@@ -339,7 +339,7 @@ function raise_purchase_request(frm) {
                         title: __("Purchase Request Created"),
                         message: __(
                             "Created {0} with {1} items.<br><br>"
-                            + '<a href="/app/material-request/{2}">{2}</a>',
+                            + '<a href="/desk/material-request/{2}">{2}</a>',
                             [result.name, result.items, result.name]
                         ),
                         indicator: "green",
@@ -421,7 +421,7 @@ function show_tracking_dialog(frm, t) {
     if (t.purchase_requests && t.purchase_requests.length) {
         html += '<h6>Linked Purchase Requests</h6><ul>';
         for (let pr of t.purchase_requests) {
-            html += `<li><a href="/app/material-request/${pr.name}">${pr.name}</a> — ${pr.status} (${pr.per_ordered}% ordered)</li>`;
+            html += `<li><a href="/desk/material-request/${pr.name}">${pr.name}</a> — ${pr.status} (${pr.per_ordered}% ordered)</li>`;
         }
         html += '</ul>';
     }
@@ -434,7 +434,7 @@ function show_tracking_dialog(frm, t) {
             if (se.damage_items && se.damage_items.length) {
                 damage_html = ' <span class="text-danger">[Damage reported]</span>';
             }
-            html += `<li><a href="/app/stock-entry/${se.name}">${se.name}</a> — ${se.custom_status || "Submitted"} (${se.posting_date})${damage_html}</li>`;
+            html += `<li><a href="/desk/stock-entry/${se.name}">${se.name}</a> — ${se.custom_status || "Submitted"} (${se.posting_date})${damage_html}</li>`;
         }
         html += '</ul>';
     }
@@ -474,7 +474,7 @@ function show_tracking_dashboard(frm) {
         callback(r) {
             if (r.message && r.message.length) {
                 let items = r.message.map(
-                    (pr) => `<a href="/app/material-request/${pr.name}">${pr.name}</a> (${pr.status})`
+                    (pr) => `<a href="/desk/material-request/${pr.name}">${pr.name}</a> (${pr.status})`
                 ).join(", ");
                 frm.dashboard.add_comment(
                     __("Linked Purchase Requests: ") + items, "blue", true
@@ -499,7 +499,7 @@ function show_tracking_dashboard(frm) {
         callback(r) {
             if (r.message && r.message.length) {
                 let items = r.message.map(
-                    (se) => `<a href="/app/stock-entry/${se.name}">${se.name}</a> (${se.custom_status || se.posting_date})`
+                    (se) => `<a href="/desk/stock-entry/${se.name}">${se.name}</a> (${se.custom_status || se.posting_date})`
                 ).join(", ");
                 frm.dashboard.add_comment(
                     __("Stock Entries: ") + items, "green", true
