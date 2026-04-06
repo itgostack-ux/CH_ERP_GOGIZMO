@@ -6,6 +6,16 @@ app_email = "manonraj@gostack.in"
 app_license = "mit"
 required_apps = ["frappe/erpnext", "AbirJ1/ch_item_master", "gofix"]
 
+# Each item in the list will be shown as an app in the apps page
+add_to_apps_screen = [
+	{
+		"name": "ch_erp15",
+		"logo": "/assets/ch_erp15/icon.svg",
+		"title": "Gogizmo ERP",
+		"route": "/desk/gogizmo-erp",
+	}
+]
+
 after_install = "ch_erp15.setup.after_install"
 after_migrate = "ch_erp15.setup.after_migrate"
 before_uninstall = "ch_erp15.setup.before_uninstall"
