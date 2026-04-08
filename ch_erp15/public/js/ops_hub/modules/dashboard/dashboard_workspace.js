@@ -41,8 +41,13 @@ export class DashboardWorkspace {
 						<div class="ops-kpi-sub">${__("Overdue requests")}</div>
 					</div>
 					<div class="ops-kpi-card" data-navigate="transfers">
+						<div class="ops-kpi-value" id="kpi-active-manifests">—</div>
+						<div class="ops-kpi-label">${__("Active Manifests")}</div>
+						<div class="ops-kpi-sub" id="kpi-manifests-in-transit">—</div>
+					</div>
+					<div class="ops-kpi-card" data-navigate="transfers">
 						<div class="ops-kpi-value" id="kpi-active-transfers">—</div>
-						<div class="ops-kpi-label">${__("Active Transfers")}</div>
+						<div class="ops-kpi-label">${__("Stock Entries")}</div>
 						<div class="ops-kpi-sub" id="kpi-in-transit">—</div>
 					</div>
 					<div class="ops-kpi-card" data-navigate="receiving">
@@ -122,6 +127,10 @@ export class DashboardWorkspace {
 					__("{0} awaiting approval", [s.pending_approval || 0])
 				);
 				this._panel.find("#kpi-sla-breached").text(s.sla_breached || 0);
+				this._panel.find("#kpi-active-manifests").text(s.active_manifests || 0);
+				this._panel.find("#kpi-manifests-in-transit").text(
+					__("{0} in transit", [s.manifests_in_transit || 0])
+				);
 				this._panel.find("#kpi-active-transfers").text(s.active_transfers || 0);
 				this._panel.find("#kpi-in-transit").text(
 					__("{0} in transit", [s.in_transit || 0])
@@ -146,6 +155,7 @@ export class DashboardWorkspace {
 		for (const act of activities) {
 			const icon = act.type === "Material Request" ? "fa-clipboard"
 				: act.type === "Stock Entry" ? "fa-truck"
+				: act.type === "CH Transfer Manifest" ? "fa-archive"
 				: "fa-file-text-o";
 			const time_ago = frappe.datetime.prettyDate(act.creation);
 			html += `

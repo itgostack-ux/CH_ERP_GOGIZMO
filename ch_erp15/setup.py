@@ -233,6 +233,15 @@ CUSTOM_FIELDS = {
             "insert_after": "custom_delivery_photo",
             "depends_on": "eval:doc.custom_logistics_status=='Reverted' || doc.custom_logistics_status=='Revert Requested'",
         },
+        {
+            "fieldname": "custom_transfer_manifest",
+            "fieldtype": "Link",
+            "label": "Transfer Manifest",
+            "options": "CH Transfer Manifest",
+            "insert_after": "custom_revert_reason",
+            "read_only": 1,
+            "depends_on": "eval:doc.stock_entry_type=='Material Transfer'",
+        },
     ],
 }
 

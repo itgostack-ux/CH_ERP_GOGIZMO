@@ -102,6 +102,19 @@ def get_dashboard_stats(warehouse=""):
 		"docstatus": 0,
 	})
 
+	# ── Manifest KPIs ──
+	active_manifests = 0
+	manifests_in_transit = 0
+	if frappe.db.exists("DocType", "CH Transfer Manifest"):
+		active_manifests = frappe.db.count("CH Transfer Manifest", filters={
+			"docstatus": 1,
+			"status": ["in", ["Packed", "Assigned", "In Transit"]],
+		})
+		manifests_in_transit = frappe.db.count("CH Transfer Manifest", filters={
+			"docstatus": 1,
+			"status": "In Transit",
+		})
+
 	# Recent activity (last 20 items)
 	recent_mrs = frappe.get_all("Material Request", filters={
 		**company_filter,
@@ -114,6 +127,13 @@ def get_dashboard_stats(warehouse=""):
 		"stock_entry_type": "Material Transfer",
 	}, fields=["name", "docstatus", "creation"],
 		order_by="creation desc", limit=10)
+
+	recent_manifests = []
+	if frappe.db.exists("DocType", "CH Transfer Manifest"):
+		recent_manifests = frappe.get_all("CH Transfer Manifest", filters={
+			"docstatus": ["in", [0, 1]],
+		}, fields=["name", "status", "creation", "driver_name"],
+			order_by="creation desc", limit=10)
 
 	recent_activity = []
 	for mr in recent_mrs:
@@ -132,6 +152,14 @@ def get_dashboard_stats(warehouse=""):
 			"description": "Material Transfer",
 			"creation": str(se.creation),
 		})
+	for m in recent_manifests:
+		recent_activity.append({
+			"type": "CH Transfer Manifest",
+			"name": m.name,
+			"status": m.status or "Draft",
+			"description": f"Driver: {m.driver_name or '—'}",
+			"creation": str(m.creation),
+		})
 
 	# Sort by creation desc, limit 15
 	recent_activity.sort(key=lambda x: x["creation"], reverse=True)
@@ -143,6 +171,8 @@ def get_dashboard_stats(warehouse=""):
 		"sla_breached": sla_breached,
 		"active_transfers": active_transfers,
 		"in_transit": in_transit,
+		"active_manifests": active_manifests,
+		"manifests_in_transit": manifests_in_transit,
 		"pending_receipt": pending_receipt,
 		"recent_activity": recent_activity,
 	}

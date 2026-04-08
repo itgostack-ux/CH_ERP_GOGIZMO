@@ -474,6 +474,15 @@ body.ops-hub-fullscreen {
 	transition: box-shadow 0.15s;
 }
 .ops-transfer-row:hover { box-shadow: var(--ops-shadow); }
+.ops-transfer-checkbox-label {
+	display: flex;
+	align-items: center;
+	padding: 0 10px 0 0;
+	margin: 0;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+.ops-transfer-check { width: 16px; height: 16px; cursor: pointer; }
 .ops-transfer-main { flex: 1; }
 .ops-transfer-top {
 	display: flex;
@@ -860,6 +869,56 @@ body.ops-hub-fullscreen {
 
 	.ops-recent-item { padding: 10px 8px; }
 }
+
+/* ─── View Switcher ──────────────────────────────────────────────────────── */
+
+.ops-view-switcher {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid var(--ops-border);
+	padding-bottom: 8px;
+}
+.ops-view-btn {
+	border: 1px solid var(--ops-border);
+	background: var(--ops-surface);
+	padding: 6px 14px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 13px;
+	color: var(--ops-text-secondary);
+	transition: all 0.15s;
+}
+.ops-view-btn:hover {
+	background: var(--ops-primary-light);
+	color: var(--ops-primary);
+}
+.ops-view-btn.active {
+	background: var(--ops-primary);
+	color: #fff;
+	border-color: var(--ops-primary);
+}
+.ops-view-btn i {
+	margin-right: 4px;
+}
+
+/* ─── Manifest Badges ────────────────────────────────────────────────────── */
+
+.ops-manifest-badge { font-weight: 600; font-size: 11px; text-transform: uppercase; }
+.ops-manifest-driver,
+.ops-manifest-courier { margin-left: 8px; font-size: 12px; color: var(--ops-text-secondary); }
+.ops-manifest-driver i,
+.ops-manifest-courier i { margin-right: 3px; }
+
+.ops-transfer-route {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--ops-text-secondary);
+	margin-top: 4px;
+}
+.ops-transfer-route i { color: var(--ops-primary); font-size: 11px; }
 
 /* ─── Phone (≤480px) ─────────────────────────────────────────────────────── */
 
