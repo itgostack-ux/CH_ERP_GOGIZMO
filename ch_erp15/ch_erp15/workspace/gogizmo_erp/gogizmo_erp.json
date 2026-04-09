@@ -1,6 +1,7 @@
 {
+ "app": "ch_erp15",
  "charts": [],
- "content": "[{\"id\": \"tQfv4BeMC8\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Gogizmo ERP</span>\", \"col\": 12}}, {\"id\": \"OCTgD_m2aV\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"ops_hub_sc1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Operations Hub\", \"col\": 3}}, {\"id\": \"rgJ8qYrjx_\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Buying Dashboard\", \"col\": 3}}, {\"id\": \"h5nOrbxhr9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Sales Dashboard\", \"col\": 3}}, {\"id\": \"V6ze5mF7uZ\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"I6JDsik2Bg\", \"type\": \"card\", \"data\": {\"card_name\": \"Buying\", \"col\": 4}}, {\"id\": \"5Cwxtn0v7n\", \"type\": \"card\", \"data\": {\"card_name\": \"Selling Module\", \"col\": 4}}, {\"id\": \"oFiCoNO6Oj\", \"type\": \"card\", \"data\": {\"card_name\": \"Stock Entry \", \"col\": 4}}, {\"id\": \"a13GboCn6q\", \"type\": \"card\", \"data\": {\"card_name\": \"Warehouse Capacity\", \"col\": 4}}, {\"id\": \"s11F_YZrdp\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\":\"tQfv4BeMC8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Gogizmo ERP</span>\",\"col\":12}},{\"id\":\"OCTgD_m2aV\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"rgJ8qYrjx_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Buying Dashboard\",\"col\":3}},{\"id\":\"h5nOrbxhr9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Sales Dashboard\",\"col\":3}},{\"id\":\"V6ze5mF7uZ\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"I6JDsik2Bg\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying\",\"col\":4}},{\"id\":\"5Cwxtn0v7n\",\"type\":\"card\",\"data\":{\"card_name\":\"Selling Module\",\"col\":4}},{\"id\":\"oFiCoNO6Oj\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock Entry \",\"col\":4}},{\"id\":\"a13GboCn6q\",\"type\":\"card\",\"data\":{\"card_name\":\"Warehouse Capacity\",\"col\":4}},{\"id\":\"s11F_YZrdp\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2026-01-10 16:36:29.845583",
  "custom_blocks": [],
  "docstatus": 0,
@@ -191,9 +192,29 @@
   },
   {
    "hidden": 0,
+   "is_query_report": 1,
+   "label": "Transfer SLA Report",
+   "link_count": 0,
+   "link_to": "Transfer SLA Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Store Material Request SLA",
+   "link_count": 0,
+   "link_to": "Store Material Request SLA",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
    "is_query_report": 0,
    "label": "Reports",
-   "link_count": 5,
+   "link_count": 8,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -267,9 +288,19 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Purchase Receipt Report",
+   "link_count": 0,
+   "link_to": "Purchase Receipt Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-03-31 06:25:31.183596",
+ "modified": "2026-04-09 13:09:11.664438",
  "modified_by": "Administrator",
  "module": "Ch Erp15",
  "name": "Gogizmo ERP",
@@ -281,14 +312,6 @@
  "roles": [],
  "sequence_id": 10.0,
  "shortcuts": [
-  {
-   "color": "Blue",
-   "doc_view": "",
-   "icon": "tool",
-   "label": "Operations Hub",
-   "link_to": "operations-hub",
-   "type": "Page"
-  },
   {
    "color": "Grey",
    "doc_view": "List",
@@ -302,13 +325,8 @@
    "label": "Sales Dashboard",
    "link_to": "Selling",
    "type": "Dashboard"
-  },
-  {
-   "doc_view": "",
-   "label": "Stock Dashboard",
-   "link_to": "Stock",
-   "type": "Dashboard"
   }
  ],
- "title": "Gogizmo ERP"
+ "title": "Gogizmo ERP",
+ "type": "Workspace"
 }
