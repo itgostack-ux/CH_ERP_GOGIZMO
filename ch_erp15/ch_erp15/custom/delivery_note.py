@@ -9,6 +9,20 @@ def has_field(doctype, fieldname):
     return frappe.get_meta(doctype).has_field(fieldname)
 
 
+def _get_serials_from_item(item):
+    """Extract serial numbers from item row — handles both legacy serial_no
+    text field and v16 Serial and Batch Bundle."""
+    if item.serial_no:
+        return [s.strip() for s in item.serial_no.split("\n") if s.strip()]
+    if item.get("serial_and_batch_bundle"):
+        try:
+            from erpnext.stock.serial_batch_bundle import get_serial_nos
+            return get_serial_nos(item.serial_and_batch_bundle)
+        except Exception:
+            return []
+    return []
+
+
 # =====================================================
 # SALES ORDER → DELIVERY NOTE
 # =====================================================
@@ -68,9 +82,10 @@ def get_exempted_value_from_serial(serial):
             SUM(pri.custom_exempted_value) / NULLIF(SUM(pri.qty), 0)
         FROM `tabSerial No` sn
         JOIN `tabPurchase Receipt Item` pri
-            ON sn.purchase_document_no = pri.parent
+            ON sn.reference_name = pri.parent
             AND sn.item_code = pri.item_code
         WHERE sn.name = %s
+          AND sn.reference_doctype = 'Purchase Receipt'
     """, (serial,), as_list=True)
 
     return flt(result[0][0]) if result and result[0][0] else 0
@@ -90,9 +105,9 @@ def _validate_exemption_data(doc):
     Purchase Receipt backing — warns if exemption data is missing or stale.
     """
     for item in doc.items:
-        if not item.serial_no:
+        serials = _get_serials_from_item(item)
+        if not serials:
             continue
-        serials = [s.strip() for s in item.serial_no.split("\n") if s.strip()]
         for sn in serials:
             exempt_val = get_exempted_value_from_serial(sn)
             if flt(exempt_val) > flt(item.rate) * 1.5:
@@ -119,9 +134,7 @@ def full_recalculation(doc, method=None):
 
     for item in doc.items:
 
-        serials = []
-        if item.serial_no:
-            serials = [s.strip() for s in item.serial_no.split("\n") if s.strip()]
+        serials = _get_serials_from_item(item)
 
         # ✅ Sync qty safely
         if serials:
@@ -212,8 +225,8 @@ def before_submit_all(doc, method=None):
 
     for item in doc.items:
 
-        if item.serial_no:
-            serials = [s.strip() for s in item.serial_no.split("\n") if s.strip()]
+        serials = _get_serials_from_item(item)
+        if serials:
             count = len(serials)
 
             item.qty = count
@@ -271,6 +284,8 @@ def create_sales_invoice_on_submit(doc, method=None):
             continue
 
         item.serial_no = dn_item.serial_no
+        if dn_item.get("serial_and_batch_bundle"):
+            item.serial_and_batch_bundle = dn_item.serial_and_batch_bundle
 
         if has_field("Sales Invoice Item", "custom_exempted_value"):
             item.custom_exempted_value = getattr(

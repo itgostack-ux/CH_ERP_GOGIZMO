@@ -51,6 +51,7 @@ frappe.ui.form.on("Purchase Receipt", {
             }
  
             item.serial_and_batch_bundle = null;
+            item.use_serial_batch_fields = 1;  // v16: use legacy serial_no text field
  
             let list = (item.serial_no || "")
                 .split("\n")
@@ -124,6 +125,7 @@ frappe.ui.form.on("Purchase Receipt", {
             }
  
             item.serial_and_batch_bundle = null;
+            item.use_serial_batch_fields = 1;  // v16: use legacy serial_no text field
         });
     }
  
